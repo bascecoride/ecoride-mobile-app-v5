@@ -105,18 +105,13 @@ const DraggableMap: FC<{ height: number }> = ({ height }) => {
         
         console.log("📍 Processed riders for state:", updatedRiders);
         
-        // Only update state if we have valid riders
+        // Update state with valid riders (modal will automatically reflect changes)
+        setNearbyRiders(updatedRiders);
+        
         if (updatedRiders.length > 0) {
-          setNearbyRiders(updatedRiders);
-          
-          // If modal is open, force a re-render to ensure riders are shown
-          if (activeRidersVisible) {
-            setActiveRidersVisible(false);
-            setTimeout(() => setActiveRidersVisible(true), 100);
-          }
+          console.log("✅ Updated riders state with", updatedRiders.length, "riders");
         } else {
           console.log("⚠️ No valid riders to display");
-          setNearbyRiders([]);
         }
       });
 
@@ -231,6 +226,17 @@ const DraggableMap: FC<{ height: number }> = ({ height }) => {
     }
   }, [arrowAngle, nearestRider]);
   
+  // Handle manual refresh from modal
+  const handleRefreshRiders = () => {
+    console.log('🔄 Manual refresh requested from modal');
+    if (location?.latitude && location?.longitude) {
+      emit("subscribeToZone", {
+        latitude: location.latitude,
+        longitude: location.longitude,
+      });
+    }
+  };
+
   // Handle viewing rider on map
   const handleViewRiderOnMap = (rider: any) => {
     setActiveRidersVisible(false);
@@ -472,6 +478,7 @@ const DraggableMap: FC<{ height: number }> = ({ height }) => {
           handleDriverPress(rider.id);
         }}
         onViewOnMap={handleViewRiderOnMap}
+        onRefreshRiders={handleRefreshRiders}
       />
     </View>
   );

@@ -25,6 +25,7 @@ interface ActiveRidersModalProps {
   onClose: () => void;
   onRiderPress: (rider: any) => void;
   onViewOnMap: (rider: any) => void;
+  onRefreshRiders?: () => void;
 }
 
 const ActiveRidersModal: FC<ActiveRidersModalProps> = ({
@@ -33,6 +34,7 @@ const ActiveRidersModal: FC<ActiveRidersModalProps> = ({
   onClose,
   onRiderPress,
   onViewOnMap,
+  onRefreshRiders,
 }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [processedRiders, setProcessedRiders] = useState<any[]>([]);
@@ -40,9 +42,8 @@ const ActiveRidersModal: FC<ActiveRidersModalProps> = ({
 
   // Process and validate riders data
   useEffect(() => {
-    if (visible) {
+    if (visible && riders) {
       console.log('🚗 ActiveRidersModal - Processing riders...');
-      console.log('🚗 Raw riders data:', JSON.stringify(riders, null, 2));
       console.log('🚗 Riders array length:', riders?.length || 0);
       
       let ridersToProcess = riders || [];
@@ -106,14 +107,18 @@ const ActiveRidersModal: FC<ActiveRidersModalProps> = ({
 
   const onRefresh = async () => {
     setRefreshing(true);
-    console.log('🔄 Refreshing riders list...');
+    console.log('🔄 Manual refresh triggered by user pull-to-refresh...');
     
-    // Force refresh by calling parent's refresh mechanism
-    // This should trigger a new socket subscription in DraggableMap
+    // Call parent's refresh function if provided
+    if (onRefreshRiders) {
+      onRefreshRiders();
+    }
+    
+    // Simulate refresh delay for user feedback
     setTimeout(() => {
       setRefreshing(false);
-      console.log('✅ Refresh completed');
-    }, 1000);
+      console.log('✅ Manual refresh completed');
+    }, 800);
   };
 
   const handleRiderPress = (rider: any) => {
