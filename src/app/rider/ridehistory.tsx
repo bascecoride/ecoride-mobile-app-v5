@@ -36,7 +36,7 @@ const RiderRideHistory = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [rides, setRides] = useState<Ride[]>([]);
   const [filteredRides, setFilteredRides] = useState<Ride[]>([]);
-  const [activeFilter, setActiveFilter] = useState("all");
+  const [activeFilter, setActiveFilter] = useState("completed");
 
   useEffect(() => {
     fetchRideHistory();
@@ -51,7 +51,8 @@ const RiderRideHistory = () => {
   const fetchRideHistory = async () => {
     try {
       setIsLoading(true);
-      const response = await getRideHistory();
+      // Fetch only completed rides for history
+      const response = await getRideHistory('COMPLETED');
       setRides(response);
       setFilteredRides(response);
     } catch (error) {
@@ -63,22 +64,9 @@ const RiderRideHistory = () => {
 
   const filterRides = (filter: string) => {
     setActiveFilter(filter);
-    if (filter === "all") {
-      setFilteredRides(rides);
-    } else if (filter === "completed") {
-      setFilteredRides(rides.filter((ride) => ride.status === "completed"));
-    } else if (filter === "searching") {
-      setFilteredRides(rides.filter((ride) => ride.status === "searching"));
-    } else if (filter === "active") {
-      setFilteredRides(
-        rides.filter(
-          (ride) =>
-            ride.status === "accepted" ||
-            ride.status === "arrived" ||
-            ride.status === "started"
-        )
-      );
-    }
+    // Only show completed rides in history
+    const completedRides = rides.filter((ride) => ride.status === "COMPLETED");
+    setFilteredRides(completedRides);
   };
 
   const renderFilterButton = (label: string, filter: string) => (
@@ -124,10 +112,14 @@ const RiderRideHistory = () => {
       </View>
 
       <View style={styles.filterContainer}>
-        {renderFilterButton("All", "all")}
-        {renderFilterButton("Completed", "completed")}
-        {renderFilterButton("Searching", "searching")}
-        {renderFilterButton("Active", "active")}
+        <View style={styles.infoContainer}>
+          <CustomText fontFamily="Medium" fontSize={14} style={styles.infoText}>
+            🏍️ Completed Rides History
+          </CustomText>
+          <CustomText fontSize={11} style={styles.infoSubText}>
+            View all your completed rides and earnings
+          </CustomText>
+        </View>
       </View>
 
       {isLoading ? (
@@ -142,7 +134,10 @@ const RiderRideHistory = () => {
             fontSize={16}
             style={styles.emptyText}
           >
-            No rides found
+            No completed rides found
+          </CustomText>
+          <CustomText fontSize={12} style={[styles.emptyText, { marginTop: 8, opacity: 0.7 }]}>
+            Complete your first ride to see it here!
           </CustomText>
         </View>
       ) : (
@@ -218,6 +213,21 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
+  },
+  infoContainer: {
+    padding: 16,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 8,
+    margin: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.primary,
+  },
+  infoText: {
+    color: "#333",
+    marginBottom: 4,
+  },
+  infoSubText: {
+    color: "#666",
   },
 });
 

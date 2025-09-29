@@ -1,4 +1,4 @@
-import { View, Text, Alert, ActivityIndicator } from "react-native";
+import { View, Text, Alert } from "react-native";
 import React, { useEffect, useState } from "react";
 import { useRiderStore } from "@/store/riderStore";
 import { useWS } from "@/service/WSProvider";
@@ -8,63 +8,104 @@ import { resetAndNavigate } from "@/utils/Helpers";
 import { StatusBar } from "expo-status-bar";
 import { rideStyles } from "@/styles/rideStyles";
 import RiderLiveTracking from "@/components/rider/RiderLiveTracking";
-import { updateRideStatus } from "@/service/rideService";
+import { updateRideStatus, cancelRideOffer } from "@/service/rideService";
 import RiderActionButton from "@/components/rider/RiderActionButton";
 import OtpInputModal from "@/components/rider/OtpInputModal";
 import CustomText from "@/components/shared/CustomText";
+import { TouchableOpacity } from "react-native-gesture-handler";
+import { Ionicons } from "@expo/vector-icons";
 
-export default function LiveRide() {
+const LiveRide = () => {
   const [isOtpModalVisible, setOtpModalVisible] = useState(false);
   const { setLocation, location, setOnDuty } = useRiderStore();
   const { emit, on, off } = useWS();
   const [rideData, setRideData] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [currentLocation, setCurrentLocation] = useState(location);
   const route = useRoute() as any;
   const params = route?.params || {};
   const id = params.id;
+
+  const handleCancelRide = async () => {
+    Alert.alert(
+      "Cancel Ride",
+      "Are you sure you want to cancel this ride?",
+      [
+        {
+          text: "No",
+          style: "cancel",
+        },
+        {
+          text: "Yes",
+          onPress: async () => {
+            const success = await cancelRideOffer(id);
+            if (success) {
+              Alert.alert("Ride Cancelled", "The ride has been cancelled successfully.");
+              resetAndNavigate("/rider/home");
+            }
+          },
+        },
+      ]
+    );
+  };
 
   useEffect(() => {
     let locationSubscription: any;
 
     const startLocationUpdates = async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === "granted") {
-        locationSubscription = await Location.watchPositionAsync(
-          {
-            accuracy: Location.Accuracy.High,
-            timeInterval: 5000,
-            distanceInterval: 300,
-          },
-          (location) => {
-            const { latitude, longitude, heading } = location.coords;
-            setLocation({
-              latitude: latitude,
-              longitude: longitude,
-              address: "Somewhere",
-              heading: heading as number,
-            });
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === "granted") {
+          console.log("🚀 Starting live location tracking for rider...");
+          
+          locationSubscription = await Location.watchPositionAsync(
+            {
+              accuracy: Location.Accuracy.High,
+              timeInterval: 3000, // Update every 3 seconds for smoother tracking
+              distanceInterval: 10, // Update every 10 meters for more precise tracking
+            },
+            (locationData) => {
+              const { latitude, longitude, heading, speed } = locationData.coords;
+              
+              const newLocation = {
+                latitude: latitude,
+                longitude: longitude,
+                address: "Live Location",
+                heading: heading as number,
+                speed: speed || 0,
+                timestamp: Date.now(),
+              };
 
-            setOnDuty(true);
+              // Update both store and local state
+              setLocation(newLocation);
+              setCurrentLocation(newLocation);
+              setOnDuty(true);
 
-            emit("goOnDuty", {
-              latitude: location.coords.latitude,
-              longitude: location.coords.longitude,
-              heading: heading as number,
-            });
+              // Emit location updates to server
+              emit("goOnDuty", {
+                latitude: latitude,
+                longitude: longitude,
+                heading: heading as number,
+              });
 
-            emit("updateLocation", {
-              latitude,
-              longitude,
-              heading,
-            });
-            console.log(
-              `Location updated: Lat ${latitude}, Lon ${longitude}, Heading: ${heading}`
-            );
-          }
-        );
-      } else {
-        console.log("Location permission denied");
+              emit("updateLocation", {
+                latitude,
+                longitude,
+                heading,
+                speed,
+                rideId: id,
+              });
+
+              console.log(
+                `🏍️ Live location: Lat ${latitude.toFixed(6)}, Lon ${longitude.toFixed(6)}, Heading: ${heading?.toFixed(0)}°, Speed: ${speed?.toFixed(1)} m/s`
+              );
+            }
+          );
+        } else {
+          console.log("❌ Location permission denied");
+          Alert.alert("Permission Required", "Location permission is required for live tracking");
+        }
+      } catch (error) {
+        console.error("❌ Error starting location tracking:", error);
       }
     };
 
@@ -72,6 +113,7 @@ export default function LiveRide() {
 
     return () => {
       if (locationSubscription) {
+        console.log("🛑 Stopping live location tracking");
         locationSubscription.remove();
       }
     };
@@ -82,30 +124,21 @@ export default function LiveRide() {
       emit("subscribeRide", id);
 
       on("rideData", (data) => {
-        console.log('Received ride data:', data);
         setRideData(data);
-        setIsLoading(false);
-        setError(null);
       });
 
       on("rideCanceled", (error) => {
-        console.log("Ride canceled:", error);
-        setError('Ride was canceled');
-        setIsLoading(false);
+        console.log("Ride error:", error);
         resetAndNavigate("/rider/home");
         Alert.alert("Ride Canceled");
       });
 
       on("rideUpdate", (data) => {
-        console.log('Received ride update:', data);
         setRideData(data);
-        setError(null);
       });
 
       on("error", (error) => {
-        console.error("Ride error:", error);
-        setError('Failed to load ride data');
-        setIsLoading(false);
+        console.log("Ride error:", error);
         resetAndNavigate("/rider/home");
         Alert.alert("Oh Dang! There was an error");
       });
@@ -113,8 +146,6 @@ export default function LiveRide() {
 
     return () => {
       off("rideData");
-      off("rideUpdate");
-      off("rideCanceled");
       off("error");
     };
   }, [id, emit, on, off]);
@@ -123,32 +154,50 @@ export default function LiveRide() {
     <View style={rideStyles.container}>
       <StatusBar style="light" backgroundColor="orange" translucent={false} />
 
-      {rideData ? (
-        <RiderLiveTracking
-          status={rideData?.status || 'UNKNOWN'}
-          drop={{
-            latitude: rideData?.drop?.latitude ? parseFloat(rideData.drop.latitude) : null,
-            longitude: rideData?.drop?.longitude ? parseFloat(rideData.drop.longitude) : null,
-          }}
-          pickup={{
-            latitude: rideData?.pickup?.latitude ? parseFloat(rideData.pickup.latitude) : null,
-            longitude: rideData?.pickup?.longitude ? parseFloat(rideData.pickup.longitude) : null,
-          }}
-          rider={{
-            latitude: location?.latitude || null,
-            longitude: location?.longitude || null,
-            heading: location?.heading || 0,
-          }}
-        />
-      ) : isLoading ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5' }}>
-          <ActivityIndicator size="large" color="orange" />
-          <CustomText fontSize={14} style={{ marginTop: 10, color: '#666' }}>Loading ride data...</CustomText>
-        </View>
-      ) : (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5' }}>
-          <CustomText fontSize={14} style={{ color: '#666' }}>No ride data available</CustomText>
-          {error && <CustomText fontSize={12} style={{ color: 'red', marginTop: 10 }}>{error}</CustomText>}
+      {rideData && (
+        <View style={{ flex: 1 }}>
+          <RiderLiveTracking
+            status={rideData?.status}
+            drop={{
+              latitude: parseFloat(rideData?.drop.latitude),
+              longitude: parseFloat(rideData?.drop.longitude),
+            }}
+            pickup={{
+              latitude: parseFloat(rideData?.pickup.latitude),
+              longitude: parseFloat(rideData?.pickup.longitude),
+            }}
+            rider={{
+              latitude: currentLocation?.latitude || location?.latitude,
+              longitude: currentLocation?.longitude || location?.longitude,
+              heading: currentLocation?.heading || location?.heading,
+            }}
+          />
+
+          {/* Cancel Button Overlay - No OTP */}
+          <View style={{
+            position: 'absolute',
+            top: 60,
+            right: 20,
+            zIndex: 1000,
+          }}>
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#ff4444',
+                padding: 12,
+                borderRadius: 25,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.25,
+                shadowRadius: 3.84,
+                elevation: 5,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              onPress={handleCancelRide}
+            >
+              <Ionicons name="close" size={20} color="white" />
+            </TouchableOpacity>
+          </View>
         </View>
       )}
 
@@ -168,7 +217,7 @@ export default function LiveRide() {
           }
           const isSuccess = await updateRideStatus(rideData?._id, "COMPLETED");
           if (isSuccess) {
-            Alert.alert("Congratulations! Ride is Completed 🎉");
+            Alert.alert("Congratulations! you rock🎉");
             resetAndNavigate("/rider/home");
           } else {
             Alert.alert("There was an error");
@@ -203,3 +252,4 @@ export default function LiveRide() {
   );
 };
 
+export default LiveRide;

@@ -1,7 +1,7 @@
 import { View, Text, Image, TouchableOpacity } from "react-native";
 import React, { FC, memo } from "react";
 import { useRiderStore } from "@/store/riderStore";
-import { acceptRideOffer } from "@/service/rideService";
+import { acceptRideOffer, cancelRideOffer } from "@/service/rideService";
 import Animated, { FadeInLeft, FadeOutRight } from "react-native-reanimated";
 import { orderStyles } from "@/styles/riderStyles";
 import { commonStyles } from "@/styles/commonStyles";
@@ -28,6 +28,13 @@ const RiderRidesItem: FC<{ item: RideItem; removeIt: () => void }> = ({
   const { location } = useRiderStore();
   const acceptRide = async () => {
     acceptRideOffer(item?._id);
+  };
+
+  const cancelRide = async () => {
+    const success = await cancelRideOffer(item?._id);
+    if (success) {
+      removeIt();
+    }
   };
 
   return (
@@ -131,8 +138,8 @@ const RiderRidesItem: FC<{ item: RideItem; removeIt: () => void }> = ({
       </View>
 
       <View style={orderStyles?.flexRowEnd}>
-        <TouchableOpacity>
-          <Ionicons name="close-circle" size={24} color="black" />
+        <TouchableOpacity onPress={cancelRide}>
+          <Ionicons name="close-circle" size={24} color="red" />
         </TouchableOpacity>
 
         <CounterButton

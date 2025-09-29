@@ -23,6 +23,10 @@ interface RideItem {
 
 const LiveTrackingSheet: FC<{ item: RideItem }> = ({ item }) => {
   const { emit } = useWS();
+  
+  console.log('LiveTrackingSheet rendered with item:', item);
+  console.log('Item status:', item?.status);
+  console.log('Item OTP:', item?.otp);
 
   return (
     <View>
@@ -43,9 +47,25 @@ const LiveTrackingSheet: FC<{ item: RideItem }> = ({ item }) => {
                 : "Ride Completed! 🎉"}
             </CustomText>
 
-            <CustomText>
-              {item?.status === "START" ? `OTP - ${item?.otp}` : "🕶️"}
-            </CustomText>
+            {item?.status === "START" && item?.otp && (
+              <View style={{ 
+                backgroundColor: '#ff6b35', 
+                paddingHorizontal: 8, 
+                paddingVertical: 4, 
+                borderRadius: 6, 
+                marginTop: 4 
+              }}>
+                <CustomText fontFamily="Bold" fontSize={14} style={{ color: 'white' }}>
+                  OTP: {item.otp}
+                </CustomText>
+              </View>
+            )}
+            
+            {item?.status === "START" && !item?.otp && (
+              <CustomText fontSize={10} style={{ color: 'red' }}>
+                Waiting for OTP...
+              </CustomText>
+            )}
           </View>
         </View>
 

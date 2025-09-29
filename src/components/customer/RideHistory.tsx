@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { RFValue } from 'react-native-responsive-fontsize';
 import { Colors } from '@/utils/Constants';
 import CustomText from '@/components/shared/CustomText';
 import RideHistoryItem from '@/components/shared/RideHistoryItem';
@@ -18,7 +20,8 @@ const RideHistory: React.FC<RideHistoryProps> = ({ activeTab = 'all' }) => {
   const fetchRideHistory = async (status?: string) => {
     try {
       setLoading(true);
-      const rideData = await getRideHistory(status === 'all' ? undefined : status);
+      // Always fetch completed rides for history
+      const rideData = await getRideHistory('COMPLETED');
       setRides(rideData);
     } catch (error) {
       console.error('Error fetching ride history:', error);
@@ -60,8 +63,14 @@ const RideHistory: React.FC<RideHistoryProps> = ({ activeTab = 'all' }) => {
     <View style={styles.container}>
       {rides.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <CustomText fontFamily="Medium" fontSize={16} style={styles.emptyText}>
-            No ride history found
+          <View style={styles.emptyIconContainer}>
+            <Ionicons name="car-outline" size={RFValue(48)} color="#E0E0E0" />
+          </View>
+          <CustomText fontFamily="Bold" fontSize={18} style={styles.emptyTitle}>
+            No Rides Yet
+          </CustomText>
+          <CustomText fontSize={14} style={styles.emptyText}>
+            Your completed rides will appear here.{'\n'}Start your first journey to build your history!
           </CustomText>
         </View>
       ) : (
@@ -92,25 +101,51 @@ const RideHistory: React.FC<RideHistoryProps> = ({ activeTab = 'all' }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: 'transparent',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 40,
   },
   listContent: {
     padding: 16,
+    paddingTop: 8,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 40,
+    marginHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    marginTop: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  emptyIconContainer: {
+    width: RFValue(80),
+    height: RFValue(80),
+    borderRadius: RFValue(40),
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  emptyTitle: {
+    color: Colors.text,
+    textAlign: 'center',
+    marginBottom: 12,
   },
   emptyText: {
     color: '#757575',
     textAlign: 'center',
+    lineHeight: 22,
   },
 });
 

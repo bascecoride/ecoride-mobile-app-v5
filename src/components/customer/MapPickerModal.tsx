@@ -8,8 +8,8 @@ import {
   Image,
 } from "react-native";
 import React, { FC, memo, useEffect, useRef, useState, useCallback, useMemo } from "react";
+import MapView from "react-native-maps";
 import { modalStyles } from "@/styles/modalStyles";
-import WebViewMap, { WebViewMapRef } from "@/components/shared/WebViewMap";
 import { useUserStore } from "@/store/userStore";
 import {
   getLatLong,
@@ -20,7 +20,7 @@ import LocationItem from "./LocationItem";
 import * as Location from "expo-location";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { RFValue } from "react-native-responsive-fontsize";
-import { customMapStyle, initialRegion } from "@/utils/CustomMap";
+import { customMapStyle, indiaIntialRegion } from "@/utils/CustomMap";
 import { mapStyles } from "@/styles/mapStyles";
 
 interface MapPickerModalProps {
@@ -42,7 +42,7 @@ const MapPickerModal: FC<MapPickerModalProps> = ({
   title,
   onSelectLocation,
 }) => {
-  const mapRef = useRef<WebViewMapRef>(null);
+  const mapRef = useRef<MapView>(null);
   const [text, setText] = useState("");
   const { location } = useUserStore();
   const [address, setAddress] = useState("");
@@ -77,23 +77,50 @@ const MapPickerModal: FC<MapPickerModalProps> = ({
   }, [fetchLocation]);
 
   useEffect(() => {
-    if (selectedLocation?.latitude) {
-      setAddress(selectedLocation?.address);
-      setRegion({
+    if (selectedLocation?.latitude && selectedLocation?.longitude) {
+      console.log('Setting selected location:', selectedLocation); // Debug log
+      setAddress(selectedLocation?.address || "");
+      const newRegion = {
         latitude: selectedLocation?.latitude,
         longitude: selectedLocation?.longitude,
-        latitudeDelta: 0.5,
-        longitudeDelta: 0.5,
-      });
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      };
+      setRegion(newRegion);
 
-      mapRef?.current?.fitToCoordinates([
-        {
-          latitude: selectedLocation?.latitude,
-          longitude: selectedLocation?.longitude,
-        },
-      ]);
+      // Animate to the selected location
+      setTimeout(() => {
+        if (mapRef?.current) {
+          mapRef.current.animateToRegion(newRegion, 1000);
+        }
+      }, 500);
+    } else {
+      // Initialize with user's current location or default
+      const defaultRegion = {
+        latitude: location?.latitude ?? indiaIntialRegion?.latitude,
+        longitude: location?.longitude ?? indiaIntialRegion?.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      };
+      console.log('Setting default region:', defaultRegion); // Debug log
+      setRegion(defaultRegion);
+      
+      // Get initial address for the default location
+      if (defaultRegion.latitude && defaultRegion.longitude) {
+        setIsLoadingAddress(true);
+        reverseGeocode(defaultRegion.latitude, defaultRegion.longitude)
+          .then(initialAddress => {
+            setAddress(initialAddress || "Current location");
+          })
+          .catch(() => {
+            setAddress("Current location");
+          })
+          .finally(() => {
+            setIsLoadingAddress(false);
+          });
+      }
     }
-  }, [selectedLocation, mapRef]);
+  }, [selectedLocation, location]);
 
   const addLocation = useCallback(async (place_id: string) => {
     try {
@@ -113,7 +140,10 @@ const MapPickerModal: FC<MapPickerModalProps> = ({
         mapRef?.current?.fitToCoordinates([{
           latitude: data.latitude,
           longitude: data.longitude,
-        }]);
+        }], {
+          edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
+          animated: true,
+        });
       }
     } catch (error) {
       console.error('Error adding location:', error);
@@ -131,66 +161,92 @@ const MapPickerModal: FC<MapPickerModalProps> = ({
     );
   };
 
+  // Track if user is currently dragging the map
+  const isDraggingRef = useRef(false);
+  const lastRegionRef = useRef<any>(null);
+  
+  // This function will be called continuously during dragging
+  const handleRegionChange = useCallback(() => {
+    // Mark that user is currently dragging
+    isDraggingRef.current = true;
+    
+    // Show immediate feedback when user starts dragging
+    if (!isLoadingAddress) {
+      setAddress("Tap and drag to select location");
+    }
+  }, [isLoadingAddress]);
+  
+  // This function will be called when user stops dragging
   const handleRegionChangeComplete = useCallback(async (newRegion: any) => {
     try {
-      // Only update if the region has changed significantly (more than ~10 meters)
-      const threshold = 0.0001;
-      if (region && 
-          Math.abs(region.latitude - newRegion.latitude) < threshold &&
-          Math.abs(region.longitude - newRegion.longitude) < threshold) {
-        return; // Skip update if change is minimal
-      }
-      
+      // Store the latest region
+      lastRegionRef.current = newRegion;
       setRegion(newRegion);
-      setIsLoadingAddress(true);
       
-      // Clear previous timeout
+      // Clear any existing timeout
       if (addressTimeoutRef.current) {
         clearTimeout(addressTimeoutRef.current);
       }
       
-      // Debounce address lookup to prevent excessive API calls
+      // Only fetch address if we're not already loading one
+      if (!isLoadingAddress) {
+        setIsLoadingAddress(true);
+      }
+      
+      // Use a significant delay to allow user to finish dragging completely
       addressTimeoutRef.current = setTimeout(async () => {
-        try {
-          const address = await reverseGeocode(
-            newRegion?.latitude,
-            newRegion?.longitude
-          );
-          setAddress(address || "Address not found");
-        } catch (error) {
-          console.error('Error getting address:', error);
-          setAddress("Unable to get address");
-        } finally {
-          setIsLoadingAddress(false);
+        // Only proceed if this is still the latest region (user hasn't moved again)
+        if (lastRegionRef.current === newRegion && isDraggingRef.current) {
+          try {
+            console.log('Getting address for:', newRegion.latitude, newRegion.longitude);
+            const addressResult = await reverseGeocode(
+              newRegion?.latitude,
+              newRegion?.longitude
+            );
+            setAddress(addressResult || "Address not found");
+            // Mark dragging as complete
+            isDraggingRef.current = false;
+          } catch (error) {
+            console.error('Error getting address:', error);
+            setAddress("Unable to get address");
+          } finally {
+            setIsLoadingAddress(false);
+          }
         }
-      }, 500);
+      }, 1500); // Significant delay to ensure user has finished dragging
     } catch (error) {
       console.error('Error in region change:', error);
       setIsLoadingAddress(false);
     }
-  }, [region]);
+  }, [isLoadingAddress]);
+
+  // handleRegionChange is now defined above with handleRegionChangeComplete
 
   const handleGpsButtonPress = useCallback(async () => {
     try {
       setIsLoadingAddress(true);
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === "granted") {
-        const currentLocation = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.High,
+        try {
+          const currentLocation = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
+          
+          const newRegion = {
+            latitude: currentLocation.coords.latitude,
+            longitude: currentLocation.coords.longitude,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          };
+          
+          setRegion(newRegion);
+          mapRef.current?.fitToCoordinates([{
+            latitude: currentLocation.coords.latitude,
+            longitude: currentLocation.coords.longitude,
+        }], {
+          edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
+          animated: true,
         });
-        
-        const newRegion = {
-          latitude: currentLocation.coords.latitude,
-          longitude: currentLocation.coords.longitude,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        };
-        
-        setRegion(newRegion);
-        mapRef.current?.fitToCoordinates([{
-          latitude: currentLocation.coords.latitude,
-          longitude: currentLocation.coords.longitude,
-        }]);
         
         // Get address for current location
         const address = await reverseGeocode(
@@ -198,11 +254,41 @@ const MapPickerModal: FC<MapPickerModalProps> = ({
           currentLocation.coords.longitude
         );
         setAddress(address || "Current location");
+        } catch (locationError) {
+          console.log("Failed to get current location, using fallback:", locationError);
+          // Use fallback location (Manila, Philippines)
+          const fallbackRegion = {
+            latitude: 14.5995,
+            longitude: 120.9842,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          };
+          setRegion(fallbackRegion);
+          setAddress("Manila, Philippines (Fallback)");
+        }
       } else {
-        console.log("Location permission denied");
+        console.log("Location permission denied, using fallback");
+        // Use fallback location
+        const fallbackRegion = {
+          latitude: 14.5995,
+          longitude: 120.9842,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        };
+        setRegion(fallbackRegion);
+        setAddress("Manila, Philippines (Fallback)");
       }
     } catch (error) {
-      console.error("Error getting location:", error);
+      console.log("Error getting location, using fallback:", error);
+      // Use fallback location
+      const fallbackRegion = {
+        latitude: 14.5995,
+        longitude: 120.9842,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      };
+      setRegion(fallbackRegion);
+      setAddress("Manila, Philippines (Fallback)");
     } finally {
       setIsLoadingAddress(false);
     }
@@ -269,24 +355,36 @@ const MapPickerModal: FC<MapPickerModalProps> = ({
         ) : (
           <>
             <View style={{ flex: 1, width: "100%" }}>
-              <WebViewMap
+              <MapView
                 ref={mapRef}
                 style={{ flex: 1 }}
-                initialRegion={{
-                  latitude:
-                    region?.latitude ??
-                    location?.latitude ??
-                    initialRegion?.latitude,
-                  longitude:
-                    region?.longitude ??
-                    location?.longitude ??
-                    initialRegion?.longitude,
-                  latitudeDelta: 0.5,
-                  longitudeDelta: 0.5,
+                region={region ? {
+                  latitude: region.latitude,
+                  longitude: region.longitude,
+                  latitudeDelta: region.latitudeDelta || 0.01,
+                  longitudeDelta: region.longitudeDelta || 0.01,
+                } : {
+                  latitude: location?.latitude ?? indiaIntialRegion?.latitude,
+                  longitude: location?.longitude ?? indiaIntialRegion?.longitude,
+                  latitudeDelta: 0.01,
+                  longitudeDelta: 0.01,
                 }}
-                showUserLocation={true}
-                onRegionChange={handleRegionChangeComplete}
+                showsMyLocationButton={false}
+                showsCompass={false}
+                showsIndoors={false}
+                showsIndoorLevelPicker={false}
+                showsTraffic={false}
+                showsScale={false}
+                showsBuildings={false}
+                showsPointsOfInterest={false}
                 customMapStyle={customMapStyle}
+                showsUserLocation={true}
+                scrollEnabled={true}
+                zoomEnabled={true}
+                pitchEnabled={false}
+                rotateEnabled={false}
+                onRegionChange={handleRegionChange}
+                onRegionChangeComplete={handleRegionChangeComplete}
               />
               <View style={mapStyles.centerMarkerContainer}>
                 <Image
@@ -316,17 +414,57 @@ const MapPickerModal: FC<MapPickerModalProps> = ({
               </Text>
               <View style={modalStyles.buttonContainer}>
                 <TouchableOpacity
-                  style={modalStyles.button}
-                  disabled={!region?.latitude || !region?.longitude || isLoadingAddress}
+                  style={[
+                    modalStyles.button,
+                    (!region?.latitude || !region?.longitude) && 
+                    { backgroundColor: '#ccc' }
+                  ]}
+                  disabled={!region?.latitude || !region?.longitude}
                   onPress={() => {
-                    if (region?.latitude && region?.longitude && address) {
-                      onSelectLocation({
-                        type: title,
-                        latitude: region.latitude,
-                        longitude: region.longitude,
-                        address: address,
-                      });
-                      onClose();
+                    // Cancel any pending address fetch
+                    if (addressTimeoutRef.current) {
+                      clearTimeout(addressTimeoutRef.current);
+                      addressTimeoutRef.current = null;
+                    }
+                    
+                    console.log('Set Address pressed:', { region, address }); // Debug log
+                    if (region?.latitude && region?.longitude) {
+                      // If we're still loading an address or have a temporary message, get a fresh address
+                      if (isLoadingAddress || !address || address === "Tap and drag to select location" || address === "Getting address...") {
+                        // Show loading feedback
+                        setIsLoadingAddress(true);
+                        
+                        // Force a final address lookup
+                        reverseGeocode(region.latitude, region.longitude)
+                          .then(finalAddress => {
+                            onSelectLocation({
+                              type: title,
+                              latitude: region.latitude,
+                              longitude: region.longitude,
+                              address: finalAddress || "Selected location",
+                            });
+                            onClose();
+                          })
+                          .catch(() => {
+                            // If reverse geocoding fails, still use the location with a generic address
+                            onSelectLocation({
+                              type: title,
+                              latitude: region.latitude,
+                              longitude: region.longitude,
+                              address: "Selected location",
+                            });
+                            onClose();
+                          });
+                      } else {
+                        // Use the existing address
+                        onSelectLocation({
+                          type: title,
+                          latitude: region.latitude,
+                          longitude: region.longitude,
+                          address: address || "Selected location",
+                        });
+                        onClose();
+                      }
                     }
                   }}
                 >

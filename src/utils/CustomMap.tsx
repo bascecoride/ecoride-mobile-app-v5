@@ -53,9 +53,9 @@ export const customMapStyle = [
   }
 ]
 
-import { DEFAULT_CURRENT_LOCATION, DEFAULT_MAP_REGION } from './LocationConfig';
-
-export const initialRegion = DEFAULT_MAP_REGION;
-
-// Re-export for backward compatibility
-export { DEFAULT_CURRENT_LOCATION } from './LocationConfig';
+export const indiaIntialRegion = {
+  latitude: 14.5995,
+  longitude: 120.9842,
+  latitudeDelta: 0.5,
+  longitudeDelta: 0.5,
+}

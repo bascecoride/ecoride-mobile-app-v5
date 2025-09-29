@@ -7,6 +7,8 @@ type CustomLocation = {
   longitude: number;
   address: string;
   heading: number;
+  speed?: number;
+  timestamp?: number;
 } | null;
 
 interface RiderStoreProps {

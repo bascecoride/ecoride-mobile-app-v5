@@ -9,7 +9,7 @@ import CustomText from "@/components/shared/CustomText";
 import RideHistory from "@/components/customer/RideHistory";
 
 const CustomerRideHistory = () => {
-  const [historyFilter, setHistoryFilter] = useState<string>("all");
+  const [historyFilter, setHistoryFilter] = useState<string>("COMPLETED");
 
   return (
     <View style={styles.container}>
@@ -33,79 +33,17 @@ const CustomerRideHistory = () => {
       </View>
 
       <View style={styles.historyContainer}>
-        <View style={styles.historyFilterContainer}>
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              historyFilter === "all" && styles.activeFilterButton,
-            ]}
-            onPress={() => setHistoryFilter("all")}
-          >
-            <CustomText
-              fontFamily="Medium"
-              fontSize={12}
-              style={[
-                styles.filterButtonText,
-                historyFilter === "all" && styles.activeFilterButtonText,
-              ]}
-            >
-              All
-            </CustomText>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              historyFilter === "COMPLETED" && styles.activeFilterButton,
-            ]}
-            onPress={() => setHistoryFilter("COMPLETED")}
-          >
-            <CustomText
-              fontFamily="Medium"
-              fontSize={12}
-              style={[
-                styles.filterButtonText,
-                historyFilter === "COMPLETED" && styles.activeFilterButtonText,
-              ]}
-            >
-              Completed
-            </CustomText>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              historyFilter === "SEARCHING_FOR_RIDER" && styles.activeFilterButton,
-            ]}
-            onPress={() => setHistoryFilter("SEARCHING_FOR_RIDER")}
-          >
-            <CustomText
-              fontFamily="Medium"
-              fontSize={12}
-              style={[
-                styles.filterButtonText,
-                historyFilter === "SEARCHING_FOR_RIDER" && styles.activeFilterButtonText,
-              ]}
-            >
-              Searching
-            </CustomText>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              (historyFilter === "START" || historyFilter === "ARRIVED") && styles.activeFilterButton,
-            ]}
-            onPress={() => setHistoryFilter("START")}
-          >
-            <CustomText
-              fontFamily="Medium"
-              fontSize={12}
-              style={[
-                styles.filterButtonText,
-                (historyFilter === "START" || historyFilter === "ARRIVED") && styles.activeFilterButtonText,
-              ]}
-            >
-              Active
-            </CustomText>
-          </TouchableOpacity>
+        <View style={styles.headerCard}>
+          <View style={styles.headerContent}>
+            <View style={styles.iconWrapper}>
+              <Ionicons name="time" size={RFValue(24)} color={Colors.primary} />
+            </View>
+            <View style={styles.headerTextContainer}>
+              <CustomText fontSize={12} style={styles.headerSubtitle}>
+                Track all your completed trips and experiences
+              </CustomText>
+            </View>
+          </View>
         </View>
         <RideHistory activeTab={historyFilter} />
       </View>
@@ -116,27 +54,70 @@ const CustomerRideHistory = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#F8F9FA",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingTop: 50,
-    paddingBottom: 10,
+    paddingBottom: 16,
     backgroundColor: "#FFFFFF",
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   backButton: {
     padding: 8,
+    borderRadius: 20,
+    backgroundColor: "#F5F5F5",
   },
   headerTitle: {
     flex: 1,
     textAlign: "center",
     marginRight: 40,
+    color: Colors.text,
   },
   historyContainer: {
     flex: 1,
+    paddingTop: 8,
   },
+  headerCard: {
+    backgroundColor: "#FFFFFF",
+    marginHorizontal: 16,
+    marginVertical: 8,
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  headerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  iconWrapper: {
+    width: RFValue(48),
+    height: RFValue(48),
+    borderRadius: RFValue(24),
+    backgroundColor: Colors.secondary_light,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 16,
+  },
+  headerTextContainer: {
+    flex: 1,
+  },
+  headerSubtitle: {
+    color: "#757575",
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  // Legacy styles for backward compatibility
   historyFilterContainer: {
     flexDirection: "row",
     padding: 10,
@@ -160,6 +141,21 @@ const styles = StyleSheet.create({
   },
   activeFilterButtonText: {
     color: "#000000",
+  },
+  infoContainer: {
+    padding: 16,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 8,
+    margin: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.primary,
+  },
+  infoText: {
+    color: "#333",
+    marginBottom: 4,
+  },
+  infoSubText: {
+    color: "#666",
   },
 });
 

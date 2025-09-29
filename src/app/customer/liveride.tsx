@@ -17,6 +17,7 @@ import CustomText from "@/components/shared/CustomText";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import SearchingRideSheet from "@/components/customer/SearchingRideSheet";
 import LiveTrackingSheet from "@/components/customer/LiveTrackingSheet";
+import RideCompletedSheet from "@/components/customer/RideCompletedSheet";
 import { resetAndNavigate } from "@/utils/Helpers";
 
 const androidHeights = [screenHeight * 0.12, screenHeight * 0.42];
@@ -48,10 +49,11 @@ const LiveRide = () => {
 
   useEffect(() => {
     if (id) {
+      console.log('Subscribing to ride:', id);
       emit("subscribeRide", id);
 
       on("rideData", (data) => {
-        console.log('Received ride data:', data);
+        console.log('Received ride data:', JSON.stringify(data, null, 2));
         setRideData(data);
         setIsLoading(false);
         setError(null);
@@ -61,9 +63,28 @@ const LiveRide = () => {
       });
 
       on("rideUpdate", (data) => {
-        console.log('Received ride update:', data);
+        console.log('Received ride update:', JSON.stringify(data, null, 2));
         setRideData(data);
         setError(null);
+      });
+
+      on("rideAccepted", (data) => {
+        console.log('Ride accepted event received:', JSON.stringify(data, null, 2));
+        if (data) {
+          setRideData(data);
+        }
+      });
+
+      on("rideCompleted", (data) => {
+        console.log('Ride completed event received:', JSON.stringify(data, null, 2));
+        if (data) {
+          setRideData(data);
+          // Auto-navigate to home after 10 seconds when ride is completed
+          setTimeout(() => {
+            console.log('Auto-navigating to home after ride completion');
+            resetAndNavigate("/customer/home");
+          }, 10000);
+        }
       });
 
       on("rideCanceled", (error) => {
@@ -86,6 +107,8 @@ const LiveRide = () => {
     return () => {
       off("rideData");
       off("rideUpdate");
+      off("rideAccepted");
+      off("rideCompleted");
       off("rideCanceled");
       off("error");
     };
@@ -96,9 +119,12 @@ const LiveRide = () => {
       console.log('Subscribing to rider location:', rideData.rider._id);
       emit("subscribeToriderLocation", rideData.rider._id);
       on("riderLocationUpdate", (data) => {
-        console.log('Received rider location update:', data);
+        console.log('Received rider location update:', JSON.stringify(data, null, 2));
         if (data?.coords) {
+          console.log('Setting rider coordinates:', data.coords);
           setriderCoords(data.coords);
+        } else {
+          console.log('No coords in rider location update');
         }
       });
     }
@@ -107,6 +133,34 @@ const LiveRide = () => {
       off("riderLocationUpdate");
     };
   }, [rideData?.rider?._id]);
+
+  // Force refresh ride data every 3 seconds to ensure we get updates
+  useEffect(() => {
+    if (id && rideData?.status === "SEARCHING_FOR_RIDER") {
+      const interval = setInterval(() => {
+        console.log('Force refreshing ride data...');
+        emit("subscribeRide", id);
+      }, 3000);
+
+      return () => clearInterval(interval);
+    }
+  }, [id, rideData?.status, emit]);
+
+  // Auto-navigate to home when ride status becomes COMPLETED
+  useEffect(() => {
+    if (rideData?.status === "COMPLETED") {
+      console.log('Ride completed, setting up auto-navigation timer');
+      const timer = setTimeout(() => {
+        console.log('Auto-navigating to home after ride completion');
+        resetAndNavigate("/customer/home");
+      }, 10000); // 10 seconds delay
+
+      return () => {
+        console.log('Clearing auto-navigation timer');
+        clearTimeout(timer);
+      };
+    }
+  }, [rideData?.status]);
 
   return (
     <View style={rideStyles.container}>
@@ -161,6 +215,8 @@ const LiveRide = () => {
           <BottomSheetScrollView contentContainerStyle={rideStyles?.container}>
             {rideData?.status === "SEARCHING_FOR_RIDER" ? (
               <SearchingRideSheet item={rideData} />
+            ) : rideData?.status === "COMPLETED" ? (
+              <RideCompletedSheet item={rideData} />
             ) : (
               <LiveTrackingSheet item={rideData} />
             )}

@@ -51,6 +51,9 @@ export const WSProvider: React.FC<{ children: React.ReactNode }> = ({
         socket.current.disconnect();
       }
 
+      console.log(`Connecting to socket server at: ${SOCKET_URL}`);
+      console.log(`Using access token: ${socketAccessToken?.substring(0, 15)}...`);
+      
       socket.current = io(SOCKET_URL, {
         transports: ["websocket"],
         withCredentials: true,
@@ -59,14 +62,25 @@ export const WSProvider: React.FC<{ children: React.ReactNode }> = ({
         },
       });
 
+      socket.current.on("connect", () => {
+        console.log(`✅ Socket connected successfully with ID: ${socket.current?.id}`);
+      });
+      
+      socket.current.on("disconnect", (reason) => {
+        console.log(`❌ Socket disconnected: ${reason}`);
+      });
+
       socket.current.on("connect_error", async (error) => {
+        console.log(`⚠️ Socket connection error: ${error.message}`);
+        
         if (error.message === "Authentication error") {
-          console.log("Auth connection error: ", error.message);
+          console.log("🔑 Auth connection error - attempting token refresh");
           try {
             await refresh_tokens();
             updateAccessToken();
+            console.log("🔄 Token refreshed, reconnecting socket...");
           } catch (refreshError) {
-            console.error("Failed to refresh token:", refreshError);
+            console.error("❌ Failed to refresh token:", refreshError);
           }
         }
       });

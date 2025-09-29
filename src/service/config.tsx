@@ -1,11 +1,15 @@
 import { Platform } from "react-native";
 
-// Production deployment - Render.com (ACTIVE FOR APK BUILD)
-export const BASE_URL = 'https://ecoride-server-deploy104.onrender.com';
-export const SOCKET_URL = 'wss://ecoride-server-deploy104.onrender.com';
+// Local development server
+// export const BASE_URL = 'http://localhost:3000';
+// export const SOCKET_URL = 'http://localhost:3000';
+
+// Production deployment - Render.com (commented out for local development)
+// export const BASE_URL = 'https://ecoride-server-deploy104.onrender.com';
+// export const SOCKET_URL = 'wss://ecoride-server-deploy104.onrender.com';
 
 // Alternative configurations (uncomment as needed)
-// For local testing
+// For local testing STEPHEN PISO WIFI
 // export const BASE_URL = 'http://10.0.18.222:3000';
 // export const SOCKET_URL = 'ws://10.0.18.222:3000';
 
@@ -13,14 +17,27 @@ export const SOCKET_URL = 'wss://ecoride-server-deploy104.onrender.com';
 // export const BASE_URL = 'http://127.0.0.1:3000';
 // export const SOCKET_URL = 'ws://127.0.0.1:3000';
 
+// For local testing yellow pad WIFI
+// export const BASE_URL = 'http://192.168.1.66:8081';
+// export const SOCKET_URL = 'ws://192.168.1.66:8081';
+
 // For Android emulator
 // export const BASE_URL = 'http://10.0.2.2:3000';
 // export const SOCKET_URL = 'ws://10.0.2.2:3000';
 
-// For testing on physical device (replace with your computer's IP address)
-// export const BASE_URL = 'http://192.168.1.X:3000';
-// export const SOCKET_URL = 'ws://192.168.1.X:3000';
+// DITO HOTSPOT
+// export const BASE_URL = 'http://192.168.86.149:3000';
+// export const SOCKET_URL = 'ws://192.168.86.149:3000';
 
 // ( CAFE WIFI - ALOCLYDE )
 // export const BASE_URL = 'http://192.168.100.171:3000';
 // export const SOCKET_URL = 'ws://192.168.100.171:3000';
+
+// STATS WIFI 
+// export const BASE_URL = 'http://192.168.137.218:3000';
+// export const SOCKET_URL = 'ws://192.168.137.218:3000';
+
+// DOGH IT WIFI
+export const BASE_URL = 'http://192.168.137.90:3000';
+export const SOCKET_URL = 'ws://192.168.137.90:3000';
+

@@ -27,21 +27,63 @@ export const getLatLong = async (placeId: string) => {
     }
 }
 
+// Simple in-memory cache for geocoding results
+const geocodeCache: Record<string, { address: string, timestamp: number }> = {};
+
+// Cache expiration time: 1 hour
+const CACHE_EXPIRATION = 60 * 60 * 1000;
+
+// Round coordinates to reduce API calls for very similar locations
+const roundCoordinates = (coord: number): number => {
+    // Round to 5 decimal places (about 1.1 meters precision)
+    return Math.round(coord * 100000) / 100000;
+};
+
 export const reverseGeocode = async (latitude: number, longitude: number) => {
+    if (!latitude || !longitude) {
+        console.log('Invalid coordinates for reverse geocoding');
+        return "";
+    }
+    
+    // Round coordinates to reduce unnecessary API calls
+    const roundedLat = roundCoordinates(latitude);
+    const roundedLng = roundCoordinates(longitude);
+    
+    // Create cache key
+    const cacheKey = `${roundedLat},${roundedLng}`;
+    
+    // Check cache first
+    const now = Date.now();
+    if (geocodeCache[cacheKey] && (now - geocodeCache[cacheKey].timestamp) < CACHE_EXPIRATION) {
+        console.log(`Using cached address for: ${roundedLat}, ${roundedLng}`);
+        return geocodeCache[cacheKey].address;
+    }
+
     try {
+        console.log(`Reverse geocoding for: ${roundedLat}, ${roundedLng}`);
         const response = await axios.get(
-            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${process.env.EXPO_PUBLIC_MAP_API_KEY}`
+            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${process.env.EXPO_PUBLIC_MAP_API_KEY}`,
+            { timeout: 10000 } // 10 second timeout
         );
-        if (response.data.status === 'OK') {
+        
+        if (response.data.status === 'OK' && response.data.results && response.data.results.length > 0) {
             const address = response.data.results[0].formatted_address;
-            return address
+            console.log(`Address found: ${address}`);
+            
+            // Cache the result
+            geocodeCache[cacheKey] = {
+                address: address,
+                timestamp: now
+            };
+            
+            return address;
         } else {
-            console.log('Geocoding failed: ', response.data.status);
-            return ""
+            console.log('Geocoding failed: ', response.data.status, response.data.error_message || 'No error message');
+            return "Selected location";
         }
     } catch (error) {
         console.log('Error during reverse geocoding: ', error);
-        return ""
+        return "Selected location";
     }
 };
 

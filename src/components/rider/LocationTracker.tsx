@@ -13,16 +13,54 @@ const LocationTracker: React.FC = () => {
   // Handle location tracking
   const startLocationTracking = async () => {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        console.log('Location permission denied');
+      // Prevent multiple simultaneous location tracking attempts
+      if (locationSubscription.current) {
+        console.log('Location tracking already active');
         return;
       }
 
-      // Get initial location
-      const initialLocation = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Highest,
-      });
+      // Request both foreground and background permissions
+      const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
+      if (foregroundStatus !== 'granted') {
+        console.log('Foreground location permission denied');
+        return;
+      }
+
+      // Check if location services are enabled
+      const isLocationEnabled = await Location.hasServicesEnabledAsync();
+      if (!isLocationEnabled) {
+        console.log('Location services are not enabled - using fallback location');
+        // Use fallback location for testing
+        const fallbackLocation = {
+          latitude: 14.5995,
+          longitude: 120.9842,
+          address: "Manila, Philippines (Fallback)",
+          heading: 0,
+        };
+        setLocation(fallbackLocation);
+        emit("goOnDuty", fallbackLocation);
+        return;
+      }
+
+      // Get initial location with better error handling
+      let initialLocation;
+      try {
+        initialLocation = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced, // Changed from High to Balanced
+        });
+      } catch (locationError) {
+        console.log('Failed to get current location, using fallback:', locationError);
+        // Use fallback location
+        const fallbackLocation = {
+          latitude: 14.5995,
+          longitude: 120.9842,
+          address: "Manila, Philippines (Fallback)",
+          heading: 0,
+        };
+        setLocation(fallbackLocation);
+        emit("goOnDuty", fallbackLocation);
+        return;
+      }
       
       const { latitude, longitude, heading } = initialLocation.coords;
       

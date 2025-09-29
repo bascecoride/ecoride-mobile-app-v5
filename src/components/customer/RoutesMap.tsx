@@ -1,14 +1,16 @@
 import { View, Text, TouchableOpacity, Image } from "react-native";
 import React, { FC, memo, useEffect, useRef } from "react";
-import { customMapStyle, initialRegion } from "@/utils/CustomMap";
-import WebViewMap, { WebViewMapRef } from "@/components/shared/WebViewMap";
+import { customMapStyle, indiaIntialRegion } from "@/utils/CustomMap";
+import MapView, { Marker } from "react-native-maps";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { RFValue } from "react-native-responsive-fontsize";
 import { mapStyles } from "@/styles/mapStyles";
+import MapViewDirections from "react-native-maps-directions";
 
+const apiKey = process.env.EXPO_PUBLIC_MAP_API_KEY || "";
 
 const RoutesMap: FC<{ drop: any; pickup: any }> = ({ drop, pickup }) => {
-  const mapRef = useRef<WebViewMapRef>(null);
+  const mapRef = useRef<MapView>(null);
 
   const fitToMarkers = async () => {
     const coordinates = [];
@@ -62,41 +64,65 @@ const RoutesMap: FC<{ drop: any; pickup: any }> = ({ drop, pickup }) => {
       };
     }
 
-    return initialRegion;
+    return indiaIntialRegion;
   };
 
   return (
     <View style={{ flex: 1 }}>
-      <WebViewMap
+      <MapView
         ref={mapRef}
+        followsUserLocation
         style={{ flex: 1 }}
         initialRegion={calculateInitialRegion()}
-        markers={[
-          ...(pickup?.latitude ? [{
-            id: 'pickup',
-            latitude: pickup.latitude,
-            longitude: pickup.longitude,
-            type: 'pickup',
-            title: 'Pickup Location'
-          }] : []),
-          ...(drop?.latitude ? [{
-            id: 'drop',
-            latitude: drop.latitude,
-            longitude: drop.longitude,
-            type: 'drop',
-            title: 'Drop Location'
-          }] : [])
-        ]}
-        showUserLocation={true}
-        showDirections={pickup?.latitude && drop?.latitude}
-        directionsConfig={pickup?.latitude && drop?.latitude ? {
-          origin: pickup,
-          destination: drop,
-          strokeColor: '#D2D2D2',
-          strokeWidth: 5
-        } : undefined}
+        showsMyLocationButton={false}
+        showsCompass={false}
+        showsIndoors={false}
         customMapStyle={customMapStyle}
-      />
+        showsUserLocation={true}
+      >
+        {pickup?.latitude && drop?.latitude && (
+          <MapViewDirections
+            origin={pickup}
+            destination={drop}
+            apikey={apiKey}
+            strokeWidth={5}
+            precision="high"
+            onReady={() => fitToMarkersWithDelay()}
+            strokeColor="#D2D2D2"
+            strokeColors={["#D2D2D2"]}
+            onError={(err) => console.log("Directions Error", err)}
+          />
+        )}
+
+        {drop?.latitude && (
+          <Marker
+            coordinate={{ latitude: drop.latitude, longitude: drop.longitude }}
+            anchor={{ x: 0.5, y: 1 }}
+            zIndex={1}
+          >
+            <Image
+              source={require("@/assets/icons/drop_marker.png")}
+              style={{ height: 30, width: 30, resizeMode: "contain" }}
+            />
+          </Marker>
+        )}
+
+        {pickup?.latitude && (
+          <Marker
+            coordinate={{
+              latitude: pickup.latitude,
+              longitude: pickup.longitude,
+            }}
+            anchor={{ x: 0.5, y: 1 }}
+            zIndex={2}
+          >
+            <Image
+              source={require("@/assets/icons/marker.png")}
+              style={{ height: 30, width: 30, resizeMode: "contain" }}
+            />
+          </Marker>
+        )}
+      </MapView>
 
       <TouchableOpacity style={mapStyles.gpsButton} onPress={fitToMarkers}>
         <MaterialCommunityIcons

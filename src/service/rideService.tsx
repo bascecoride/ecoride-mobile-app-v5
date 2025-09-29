@@ -69,6 +69,17 @@ export const getMyRides = async (isCustomer: boolean = true) => {
   }
 };
 
+export const getRideHistoryCompleted = async () => {
+  try {
+    const res = await api.get(`/ride/rides?status=COMPLETED`);
+    return res.data.rides || [];
+  } catch (error: any) {
+    console.log("Error: Get Completed Ride History ", error);
+    Alert.alert("Error", "Failed to fetch ride history");
+    return [];
+  }
+};
+
 export const acceptRideOffer = async (rideId: string) => {
   try {
     const res = await api.patch(`/ride/accept/${rideId}`);
@@ -95,7 +106,8 @@ export const updateRideStatus = async (rideId: string, status: string) => {
 
 export const getRideHistory = async (status?: string) => {
   try {
-    const queryParams = status ? `?status=${status}` : '';
+    // If no status specified, only return completed rides for history
+    const queryParams = status ? `?status=${status}` : '?status=COMPLETED';
     const res = await api.get(`/ride/rides${queryParams}`);
     return res.data.rides || [];
   } catch (error: any) {
@@ -150,5 +162,16 @@ export const getMyRatings = async () => {
     console.log("Error: Get My Ratings ", error);
     Alert.alert("Error", "Failed to fetch your ratings");
     return { count: 0, averageRating: 0, ratings: [] };
+  }
+};
+
+export const cancelRideOffer = async (rideId: string) => {
+  try {
+    const res = await api.delete(`/ride/cancel/${rideId}`);
+    return true;
+  } catch (error: any) {
+    Alert.alert("Error", "Failed to cancel ride offer");
+    console.log("Error: Cancel Ride Offer ", error);
+    return false;
   }
 };
