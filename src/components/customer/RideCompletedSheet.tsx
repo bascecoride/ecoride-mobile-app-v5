@@ -4,7 +4,7 @@ import { rideStyles } from "@/styles/rideStyles";
 import { commonStyles } from "@/styles/commonStyles";
 import CustomText from "../shared/CustomText";
 import { vehicleIcons } from "@/utils/mapUtils";
-import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
+import { MaterialCommunityIcons, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { resetAndNavigate } from "@/utils/Helpers";
 
 type VehicleType = "Single Motorcycle" | "Tricycle" | "Cab";
@@ -20,7 +20,12 @@ interface RideItem {
   status: string;
 }
 
-const RideCompletedSheet: FC<{ item: RideItem }> = ({ item }) => {
+interface RideCompletedSheetProps {
+  item: RideItem;
+  onNavigateHome?: () => void;
+}
+
+const RideCompletedSheet: FC<RideCompletedSheetProps> = ({ item, onNavigateHome }) => {
   const [countdown, setCountdown] = useState(10);
   const [isAutoNavigating, setIsAutoNavigating] = useState(true);
 
@@ -30,12 +35,25 @@ const RideCompletedSheet: FC<{ item: RideItem }> = ({ item }) => {
         setCountdown(countdown - 1);
       }, 1000);
       return () => clearTimeout(timer);
+    } else if (countdown === 0 && isAutoNavigating) {
+      handleCleanupAndNavigate();
     }
   }, [countdown, isAutoNavigating]);
 
+  const handleCleanupAndNavigate = () => {
+    console.log('🧹 Cleaning up socket listeners and navigating to home');
+    setIsAutoNavigating(false);
+    // Call the cleanup function passed from parent
+    if (onNavigateHome) {
+      onNavigateHome();
+    } else {
+      resetAndNavigate("/customer/home");
+    }
+  };
+
   const handleManualNavigation = () => {
     setIsAutoNavigating(false);
-    resetAndNavigate("/customer/home");
+    handleCleanupAndNavigate();
   };
 
   const cancelAutoNavigation = () => {
@@ -44,6 +62,27 @@ const RideCompletedSheet: FC<{ item: RideItem }> = ({ item }) => {
 
   return (
     <View>
+      {/* Back Button */}
+      <TouchableOpacity
+        style={{
+          position: 'absolute',
+          top: 10,
+          left: 10,
+          zIndex: 10,
+          backgroundColor: 'white',
+          borderRadius: 20,
+          padding: 8,
+          elevation: 3,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.25,
+          shadowRadius: 3.84,
+        }}
+        onPress={handleCleanupAndNavigate}
+      >
+        <MaterialIcons name="arrow-back" size={24} color="#333" />
+      </TouchableOpacity>
+
       {/* Success Header */}
       <View style={[rideStyles?.headerContainer, { backgroundColor: '#4CAF50', borderRadius: 10, margin: 10 }]}>
         <View style={commonStyles.flexRowGap}>

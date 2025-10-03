@@ -150,12 +150,6 @@ const RideBooking = () => {
       )}
 
       <View style={rideStyles.rideSelectionContainer}>
-        <View style={rideStyles?.offerContainer}>
-          <CustomText fontSize={12} style={rideStyles.offerText}>
-            You get ₱10 off 5 coins cashback!
-          </CustomText>
-        </View>
-
         <ScrollView
           contentContainerStyle={rideStyles?.scrollContainer}
           showsVerticalScrollIndicator={false}
@@ -269,11 +263,6 @@ const RideOption = memo(({ ride, selected, onSelect }: any) => (
         <CustomText fontFamily="Medium" fontSize={14}>
           ₱{ride?.price?.toFixed(2)}
         </CustomText>
-        {selected === ride.type && (
-          <Text style={rideStyles?.discountedPrice}>
-            ₱{Number(ride?.price + 10).toFixed(2)}
-          </Text>
-        )}
       </View>
     </View>
   </TouchableOpacity>

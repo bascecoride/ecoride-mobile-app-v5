@@ -56,7 +56,7 @@ const RatingItem: React.FC<RatingItemProps> = ({ rating }) => {
       case 'Tricycle':
         return 'Tricycle';
       case 'Cab':
-        return 'Cab';
+        return 'Four Wheel';
       default:
         return vehicle;
     }

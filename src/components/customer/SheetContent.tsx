@@ -11,9 +11,9 @@ import ProfileModal from "./ProfileModal";
 const cubes = [
   { name: "Single", imageUri: require("@/assets/icons/bike.png") },
   { name: "Tricycle", imageUri: require("@/assets/icons/auto.png") },
-  { name: "Cab ", imageUri: require("@/assets/icons/cab.png") },
+  { name: "Four Wheel", imageUri: require("@/assets/icons/cab.png") },
  // { name: "Parcel", imageUri: require("@/assets/icons/parcel.png") },
-  { name: "Cab Premium", imageUri: require("@/assets/icons/cab_premium.png") },
+  { name: "Four Wheel Premium", imageUri: require("@/assets/icons/cab_premium.png") },
 ];
 
 const SheetContent = () => {

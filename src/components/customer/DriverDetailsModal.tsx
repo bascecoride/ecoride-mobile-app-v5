@@ -67,6 +67,10 @@ const DriverDetailsModal: FC<DriverDetailsModalProps> = ({
         return require('@/assets/images/bike_marker.png');
     }
   };
+  
+  const getVehicleDisplayName = (type: string) => {
+    return type === 'Cab' ? 'Four Wheel' : type;
+  };
 
   const handleCallDriver = async () => {
     const phoneNumber = driverDetails.phone;
@@ -147,9 +151,9 @@ const DriverDetailsModal: FC<DriverDetailsModalProps> = ({
                     <CustomText fontFamily="Medium" fontSize={14} style={styles.ratingText}>
                       {parseFloat(driverDetails.averageRating).toFixed(1)}
                     </CustomText>
-                    {driverDetails.totalRatings && (
+                    {driverDetails.totalRatings > 0 && (
                       <CustomText fontSize={12} style={styles.experienceText}>
-                        • {driverDetails.totalRatings} reviews
+                        • {driverDetails.totalRatings} {driverDetails.totalRatings === 1 ? 'review' : 'reviews'}
                       </CustomText>
                     )}
                   </View>
@@ -180,7 +184,7 @@ const DriverDetailsModal: FC<DriverDetailsModalProps> = ({
                   />
                   <View style={styles.vehicleDetails}>
                     <CustomText fontFamily="SemiBold" fontSize={16} style={styles.vehicleType}>
-                      {driverDetails.vehicleType}
+                      {getVehicleDisplayName(driverDetails.vehicleType)}
                     </CustomText>
                   </View>
                 </View>

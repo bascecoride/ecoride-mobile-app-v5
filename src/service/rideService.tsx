@@ -52,16 +52,24 @@ export const createRide = async (payload: {
 export const getMyRides = async (isCustomer: boolean = true) => {
   try {
     const res = await api.get(`/ride/rides`);
-    const filterRides = res.data.rides?.filter(
-      (ride: any) => ride?.status != "COMPLETED"
+    // Only navigate to ACTIVE rides (exclude COMPLETED, CANCELLED, TIMEOUT)
+    const activeRides = res.data.rides?.filter(
+      (ride: any) => 
+        ride?.status === "SEARCHING_FOR_RIDER" || 
+        ride?.status === "START" || 
+        ride?.status === "ARRIVED"
     );
-    if (filterRides?.length > 0) {
+    
+    if (activeRides?.length > 0) {
+      console.log(`🚗 Found ${activeRides.length} active ride(s), navigating to first one`);
       router?.navigate({
         pathname: isCustomer ? "/customer/liveride" : "/rider/liveride",
         params: {
-          id: filterRides![0]?._id,
+          id: activeRides[0]?._id,
         },
       });
+    } else {
+      console.log('✅ No active rides found');
     }
   } catch (error: any) {
     Alert.alert("Oh! Dang there was an error");

@@ -34,10 +34,14 @@ import { Platform } from "react-native";
 // export const SOCKET_URL = 'ws://192.168.100.171:3000';
 
 // STATS WIFI 
-// export const BASE_URL = 'http://192.168.137.218:3000';
-// export const SOCKET_URL = 'ws://192.168.137.218:3000';
+ export const BASE_URL = 'http://192.168.137.218:3000';
+ export const SOCKET_URL = 'ws://192.168.137.218:3000';
+
+//DITO WIFI
+//export const BASE_URL = 'http://192.168.86.149:3000';
+//export const SOCKET_URL = 'ws://192.168.86.149:3000';
 
 // DOGH IT WIFI
-export const BASE_URL = 'http://192.168.137.90:3000';
-export const SOCKET_URL = 'ws://192.168.137.90:3000';
+//export const BASE_URL = 'http://192.168.137.90:3000';
+//export const SOCKET_URL = 'ws://192.168.137.90:3000';
 

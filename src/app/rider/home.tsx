@@ -20,7 +20,7 @@ import { useAuthStore } from "@/store/authStore";
 const RiderHome = () => {
   const isFocused = useIsFocused();
   const { emit, on, off } = useWS();
-  const { onDuty, setLocation } = useRiderStore();
+  const { onDuty, setLocation, user } = useRiderStore();
   const { token } = useAuthStore();
 
   // State management
@@ -191,10 +191,20 @@ const RiderHome = () => {
         console.log(`💾 API Backup: Found ${response.data.rides.length} rides`);
         setLastRefreshTime(new Date());
         
+        // Filter rides by rider's vehicle type
+        const riderVehicleType = user?.vehicleType;
+        let filteredRides = response.data.rides;
+        
+        if (riderVehicleType) {
+          const beforeFilterCount = filteredRides.length;
+          filteredRides = filteredRides.filter((ride: any) => ride.vehicle === riderVehicleType);
+          console.log(`💾 API Backup: Filtered rides by vehicle type ${riderVehicleType}: ${beforeFilterCount} → ${filteredRides.length}`);
+        }
+        
         // Only update if we have rides or if socket has failed
-        if (response.data.rides.length > 0 || socketFailedRef.current) {
-          setRideOffers(response.data.rides);
-          logCurrentRides(response.data.rides);
+        if (filteredRides.length > 0 || socketFailedRef.current) {
+          setRideOffers(filteredRides);
+          logCurrentRides(filteredRides);
         }
       } else {
         console.log("💾 API Backup: No rides found or invalid response format", response.data);
@@ -271,10 +281,27 @@ const RiderHome = () => {
         setLastRefreshTime(new Date());
         
         console.log(`✅ Received ${rides?.length || 0} searching rides via socket`);
-        if (rides?.length > 0) {
-          console.log(`📋 Ride IDs: ${rides.map(r => r._id).join(', ')}`);
+        
+        // Filter rides by rider's vehicle type
+        const riderVehicleType = user?.vehicleType;
+        let filteredRides = rides || [];
+        
+        if (riderVehicleType) {
+          const beforeFilterCount = filteredRides.length;
+          filteredRides = filteredRides.filter(ride => ride.vehicle === riderVehicleType);
+          console.log(`🚗 Filtered rides by vehicle type ${riderVehicleType}: ${beforeFilterCount} → ${filteredRides.length}`);
+          
+          if (beforeFilterCount > filteredRides.length) {
+            console.log(`ℹ️ Excluded ${beforeFilterCount - filteredRides.length} rides that don't match your vehicle type`);
+          }
+        } else {
+          console.log('⚠️ No vehicle type set for rider, showing all rides');
         }
-        setRideOffers(rides || []);
+        
+        if (filteredRides.length > 0) {
+          console.log(`📋 Ride IDs: ${filteredRides.map(r => r._id).join(', ')}`);
+        }
+        setRideOffers(filteredRides);
       });
 
       // Listen for new ride requests in real-time
@@ -291,6 +318,13 @@ const RiderHome = () => {
         console.log(`🆕 New ride request received: ${rideDetails._id}`);
         console.log(`📍 From: ${rideDetails.pickup?.address || 'Unknown'} to ${rideDetails.drop?.address || 'Unknown'}`);
         console.log(`💰 Fare: ${rideDetails.fare || 'Unknown'}, Vehicle: ${rideDetails.vehicle || 'Unknown'}`);
+        
+        // Check if ride matches rider's vehicle type
+        const riderVehicleType = user?.vehicleType;
+        if (riderVehicleType && rideDetails.vehicle !== riderVehicleType) {
+          console.log(`🚫 Ride requires ${rideDetails.vehicle}, but you have ${riderVehicleType}. Skipping this ride.`);
+          return; // Don't add this ride to the list
+        }
         
         setRideOffers((prevOffers) => {
           // Create a deep copy to ensure state updates properly
@@ -366,6 +400,32 @@ const RiderHome = () => {
         removeRide(rideId);
       });
 
+      // Listen for ride cancellations from ride room (when customer/rider cancels)
+      on("rideCanceled", (data: any) => {
+        // Update last response time
+        lastSocketResponseRef.current = Date.now();
+        socketFailedRef.current = false;
+        
+        const rideId = typeof data === 'string' ? data : data?.ride?._id || data?.rideId;
+        if (rideId) {
+          console.log(`❌ Ride canceled via rideCanceled event: ${rideId}`);
+          removeRide(rideId);
+        }
+      });
+
+      // Listen for ride completions to remove from list
+      on("rideCompleted", (data: any) => {
+        // Update last response time
+        lastSocketResponseRef.current = Date.now();
+        socketFailedRef.current = false;
+        
+        const rideId = typeof data === 'string' ? data : data?._id || data?.rideId;
+        if (rideId) {
+          console.log(`✅ Ride completed, removing from list: ${rideId}`);
+          removeRide(rideId);
+        }
+      });
+
       on("rideOfferTimeout", (rideId: string) => {
         // Update last response time
         lastSocketResponseRef.current = Date.now();
@@ -390,6 +450,8 @@ const RiderHome = () => {
         off("rideAccepted");
         off("rideOfferCanceled");
         off("rideOfferTimeout");
+        off("rideCanceled");
+        off("rideCompleted");
       };
     } else {
       // Clear rides when going off duty
@@ -448,7 +510,9 @@ const RiderHome = () => {
               {onDuty
                 ? isLoading 
                   ? "🔄 Loading rides... Please wait" 
-                  : "🔍 Searching for rides city-wide...\nStay Active!"
+                  : user?.vehicleType 
+                    ? `🔍 Searching for ${user.vehicleType} rides city-wide...\nStay Active!`
+                    : "🔍 Searching for rides city-wide...\nStay Active!"
                 : "You're currently OFF-DUTY, please go ON-DUTY to start earning"}
             </CustomText>
             {onDuty && (
@@ -463,9 +527,16 @@ const RiderHome = () => {
                 <CustomText fontSize={10} style={{ color: 'white', textAlign: 'center' }}>
                   {connectionStatus === 'error' 
                     ? '⚠️ Using backup connection' 
-                    : '🌍 Monitoring ALL city rides'}
+                    : user?.vehicleType
+                      ? `🚗 Showing only ${user.vehicleType} rides`
+                      : '🌍 Monitoring ALL city rides'}
                 </CustomText>
               </View>
+            )}
+            {onDuty && user?.vehicleType && (
+              <CustomText fontSize={9} style={{ color: '#666', textAlign: 'center', marginTop: 8, fontStyle: 'italic' }}>
+                Only rides matching your vehicle type ({user.vehicleType}) will appear
+              </CustomText>
             )}
             {lastRefreshTime && onDuty && (
               <CustomText fontSize={9} style={{ color: '#888', textAlign: 'center', marginTop: 5 }}>

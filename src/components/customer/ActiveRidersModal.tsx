@@ -151,6 +151,10 @@ const ActiveRidersModal: FC<ActiveRidersModalProps> = ({
         return 'motorbike';
     }
   };
+  
+  const getVehicleDisplayName = (vehicleType: string) => {
+    return vehicleType === 'Cab' ? 'Four Wheel' : vehicleType;
+  };
 
   const getVehicleColor = (vehicleType: string) => {
     switch (vehicleType) {
@@ -356,7 +360,7 @@ const ActiveRidersModal: FC<ActiveRidersModalProps> = ({
                           color="#666" 
                         />
                         <Text style={styles.vehicleText}>
-                          {rider.vehicleType}
+                          {getVehicleDisplayName(rider.vehicleType)}
                         </Text>
                       </View>
                     </View>

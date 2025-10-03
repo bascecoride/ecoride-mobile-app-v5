@@ -12,12 +12,20 @@ import CustomText from "../shared/CustomText";
 import { logout } from "@/service/authService";
 
 const LocationBar = () => {
-  const { location } = useUserStore();
+  const { location, user } = useUserStore();
   const { disconnect } = useWS();
 
   return (
     <View style={uiStyles.absoluteTop}>
       <SafeAreaView />
+      
+      {/* Welcome Message 
+      <View style={{ paddingHorizontal: 15, paddingTop: 5 }}>
+        <CustomText fontFamily="SemiBold" fontSize={16} style={{ color: Colors.text }}>
+          Welcome Passenger{user?.firstName ? `, ${user.firstName}` : ''}!
+        </CustomText>
+      </View> */}
+      
       <View style={uiStyles.container}>
         <TouchableOpacity
           style={uiStyles.btn}

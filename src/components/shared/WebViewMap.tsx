@@ -639,8 +639,8 @@ const WebViewMap = forwardRef<WebViewMapRef, WebViewMapProps>(({
                     'Tricycle': {
                         color: '#FFB000',
                         bgColor: '#FFF8E1',
-                        icon: '🛺',
-                        symbol: '🛺'
+                        icon: '🛖',
+                        symbol: '🛖'
                     },
                     'Cab': {
                         color: '#007AFF',

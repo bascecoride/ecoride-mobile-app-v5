@@ -18,6 +18,7 @@ import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import SearchingRideSheet from "@/components/customer/SearchingRideSheet";
 import LiveTrackingSheet from "@/components/customer/LiveTrackingSheet";
 import RideCompletedSheet from "@/components/customer/RideCompletedSheet";
+import RideCanceledSheet from "@/components/customer/RideCanceledSheet";
 import { resetAndNavigate } from "@/utils/Helpers";
 
 const androidHeights = [screenHeight * 0.12, screenHeight * 0.42];
@@ -33,6 +34,8 @@ const LiveRide = () => {
   const params = route?.params || {};
   const id = params.id;
   const bottomSheetRef = useRef(null);
+  const navigationTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitialLoad = useRef(true);
   const snapPoints = useMemo(
     () => (Platform.OS === "ios" ? iosHeights : androidHeights),
     []
@@ -54,6 +57,18 @@ const LiveRide = () => {
 
       on("rideData", (data) => {
         console.log('Received ride data:', JSON.stringify(data, null, 2));
+        
+        // Only redirect if ride is already finished on INITIAL LOAD (not during the ride)
+        if (isInitialLoad.current && (data?.status === "CANCELLED" || data?.status === "COMPLETED" || data?.status === "TIMEOUT")) {
+          console.log(`⚠️ Ride is already ${data.status} on initial load, navigating to home immediately`);
+          emit("leaveRide", id);
+          resetAndNavigate("/customer/home");
+          return;
+        }
+        
+        // Mark that initial load is complete
+        isInitialLoad.current = false;
+        
         setRideData(data);
         setIsLoading(false);
         setError(null);
@@ -79,20 +94,41 @@ const LiveRide = () => {
         console.log('Ride completed event received:', JSON.stringify(data, null, 2));
         if (data) {
           setRideData(data);
-          // Auto-navigate to home after 10 seconds when ride is completed
-          setTimeout(() => {
-            console.log('Auto-navigating to home after ride completion');
-            resetAndNavigate("/customer/home");
-          }, 10000);
+          // Leave the ride room immediately to stop receiving updates
+          emit("leaveRide", id);
         }
       });
 
-      on("rideCanceled", (error) => {
-        console.log('Ride canceled:', error);
-        setError('Ride was canceled');
-        setIsLoading(false);
-        resetAndNavigate("/customer/home");
-        Alert.alert("Ride Canceled");
+      on("rideCanceled", (data) => {
+        console.log('Ride canceled:', data);
+        if (data?.ride) {
+          setRideData(data.ride);
+          // Leave the ride room immediately to stop receiving updates
+          emit("leaveRide", id);
+        } else {
+          setError('Ride was canceled');
+          setIsLoading(false);
+          emit("leaveRide", id);
+          cleanupAndNavigateHome();
+        }
+      });
+
+      on("riderCancelledRide", (data) => {
+        console.log("Rider cancelled ride:", data);
+        // Leave the ride room immediately
+        emit("leaveRide", id);
+        Alert.alert(
+          "Rider Cancelled Ride",
+          `${data.riderName} has cancelled the ride. You will be redirected to the home screen.`,
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                resetAndNavigate("/customer/home");
+              }
+            }
+          ]
+        );
       });
 
       on("error", (error) => {
@@ -110,6 +146,7 @@ const LiveRide = () => {
       off("rideAccepted");
       off("rideCompleted");
       off("rideCanceled");
+      off("riderCancelledRide");
       off("error");
     };
   }, [id, emit, on, off]);
@@ -146,21 +183,67 @@ const LiveRide = () => {
     }
   }, [id, rideData?.status, emit]);
 
-  // Auto-navigate to home when ride status becomes COMPLETED
+  // Cleanup function to clear all socket listeners and navigate home
+  const cleanupAndNavigateHome = useCallback(() => {
+    console.log('🧹 Starting cleanup process...');
+    
+    // Clear any pending navigation timers
+    if (navigationTimerRef.current) {
+      clearTimeout(navigationTimerRef.current);
+      navigationTimerRef.current = null;
+    }
+    
+    // Leave the ride room
+    if (id) {
+      console.log('📤 Leaving ride room:', id);
+      emit("leaveRide", id);
+    }
+    
+    // Unsubscribe from rider location updates
+    if (rideData?.rider?._id) {
+      console.log('📍 Unsubscribing from rider location');
+      emit("unsubscribeFromriderLocation", rideData.rider._id);
+    }
+    
+    // Clear all socket listeners
+    console.log('🔌 Clearing all socket listeners');
+    off("rideData");
+    off("rideUpdate");
+    off("rideAccepted");
+    off("rideCompleted");
+    off("rideCanceled");
+    off("riderCancelledRide");
+    off("riderLocationUpdate");
+    off("error");
+    
+    // Navigate to home
+    console.log('🏠 Navigating to home screen');
+    resetAndNavigate("/customer/home");
+  }, [id, rideData?.rider?._id, emit, off]);
+
+  // Auto-navigate to home when ride status becomes COMPLETED or CANCELLED
   useEffect(() => {
     if (rideData?.status === "COMPLETED") {
-      console.log('Ride completed, setting up auto-navigation timer');
-      const timer = setTimeout(() => {
-        console.log('Auto-navigating to home after ride completion');
-        resetAndNavigate("/customer/home");
-      }, 10000); // 10 seconds delay
+      console.log('✅ Ride completed - leaving ride room');
+      // Leave the ride room to stop receiving updates
+      emit("leaveRide", id);
+    } else if (rideData?.status === "CANCELLED") {
+      console.log('❌ Ride canceled - setting up auto-navigation timer');
+      // Leave the ride room to stop receiving updates
+      emit("leaveRide", id);
+      navigationTimerRef.current = setTimeout(() => {
+        console.log('Auto-navigating to home after ride cancellation');
+        cleanupAndNavigateHome();
+      }, 5000); // 5 seconds delay
 
       return () => {
-        console.log('Clearing auto-navigation timer');
-        clearTimeout(timer);
+        if (navigationTimerRef.current) {
+          clearTimeout(navigationTimerRef.current);
+          navigationTimerRef.current = null;
+        }
       };
     }
-  }, [rideData?.status]);
+  }, [rideData?.status, emit, id, cleanupAndNavigateHome]);
 
   return (
     <View style={rideStyles.container}>
@@ -216,7 +299,9 @@ const LiveRide = () => {
             {rideData?.status === "SEARCHING_FOR_RIDER" ? (
               <SearchingRideSheet item={rideData} />
             ) : rideData?.status === "COMPLETED" ? (
-              <RideCompletedSheet item={rideData} />
+              <RideCompletedSheet item={rideData} onNavigateHome={cleanupAndNavigateHome} />
+            ) : rideData?.status === "CANCELLED" ? (
+              <RideCanceledSheet item={rideData} />
             ) : (
               <LiveTrackingSheet item={rideData} />
             )}

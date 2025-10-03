@@ -146,7 +146,7 @@ const RideHistoryItem: React.FC<RideHistoryItemProps> = ({ ride, onPress, isRide
       case 'Tricycle':
         return 'Tricycle';
       case 'Cab':
-        return 'Cab';
+        return 'Four Wheel';
       default:
         return vehicle;
     }

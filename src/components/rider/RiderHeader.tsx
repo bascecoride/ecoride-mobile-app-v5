@@ -23,7 +23,7 @@ import ProfileModal from "./ProfileModal";
 
 const RiderHeader = () => {
   const { disconnect, emit } = useWS();
-  const { setOnDuty, onDuty, setLocation } = useRiderStore();
+  const { setOnDuty, onDuty, setLocation, user } = useRiderStore();
   const isFocused = useIsFocused();
   const [profileModalVisible, setProfileModalVisible] = useState(false);
 
@@ -66,6 +66,13 @@ const RiderHeader = () => {
     <>
       <View style={riderStyles.headerContainer}>
         <SafeAreaView />
+        
+        {/* Welcome Message 
+        <View style={{ paddingHorizontal: 15, paddingBottom: 8 }}>
+          <CustomText fontFamily="SemiBold" fontSize={16} style={{ color: Colors.text }}>
+            Welcome Driver{user?.firstName ? `, ${user.firstName}` : ''}!
+          </CustomText>
+        </View> */}
 
         <View style={commonStyles.flexRowBetween}>
           <FontAwesome

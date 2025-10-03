@@ -127,10 +127,26 @@ const LiveRide = () => {
         setRideData(data);
       });
 
-      on("rideCanceled", (error) => {
-        console.log("Ride error:", error);
+      on("rideCanceled", (data) => {
+        console.log("Ride canceled:", data);
         resetAndNavigate("/rider/home");
-        Alert.alert("Ride Canceled");
+        Alert.alert("Ride Canceled", data?.message || "The ride has been canceled");
+      });
+
+      on("passengerCancelledRide", (data) => {
+        console.log("Passenger cancelled ride:", data);
+        Alert.alert(
+          "Passenger Cancelled Ride",
+          `${data.passengerName} has cancelled the ride. You will be redirected to the home screen.`,
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                resetAndNavigate("/rider/home");
+              }
+            }
+          ]
+        );
       });
 
       on("rideUpdate", (data) => {
@@ -146,6 +162,9 @@ const LiveRide = () => {
 
     return () => {
       off("rideData");
+      off("rideCanceled");
+      off("passengerCancelledRide");
+      off("rideUpdate");
       off("error");
     };
   }, [id, emit, on, off]);

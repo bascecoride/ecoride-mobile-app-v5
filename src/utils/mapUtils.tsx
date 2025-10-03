@@ -131,20 +131,20 @@ export const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2
 
 export const calculateFare = (distance: number) => {
     const rateStructure = {
-        "Single Motorcycle": { baseFare: 10, perKmRate: 5, minimumFare: 25 },
-        "Tricycle": { baseFare: 15, perKmRate: 7, minimumFare: 30 },
-        "Cab": { baseFare: 20, perKmRate: 10, minimumFare: 50 },
+        "Single Motorcycle": { minimumRate: 15, perKmRate: 2.5 },
+        "Tricycle": { minimumRate: 20, perKmRate: 2.8 },
+        "Cab": { minimumRate: 30, perKmRate: 3 },
     };
 
-    const fareCalculation = (baseFare: number, perKmRate: number, minimumFare: number) => {
-        const calculatedFare = baseFare + (distance * perKmRate);
-        return Math.max(calculatedFare, minimumFare);
+    const fareCalculation = (minimumRate: number, perKmRate: number) => {
+        const calculatedFare = distance * perKmRate;
+        return Math.max(calculatedFare, minimumRate);
     };
 
     return {
-        "Single Motorcycle": fareCalculation(rateStructure["Single Motorcycle"].baseFare, rateStructure["Single Motorcycle"].perKmRate, rateStructure["Single Motorcycle"].minimumFare),
-        "Tricycle": fareCalculation(rateStructure["Tricycle"].baseFare, rateStructure["Tricycle"].perKmRate, rateStructure["Tricycle"].minimumFare),
-        "Cab": fareCalculation(rateStructure["Cab"].baseFare, rateStructure["Cab"].perKmRate, rateStructure["Cab"].minimumFare),
+        "Single Motorcycle": fareCalculation(rateStructure["Single Motorcycle"].minimumRate, rateStructure["Single Motorcycle"].perKmRate),
+        "Tricycle": fareCalculation(rateStructure["Tricycle"].minimumRate, rateStructure["Tricycle"].perKmRate),
+        "Cab": fareCalculation(rateStructure["Cab"].minimumRate, rateStructure["Cab"].perKmRate),
     };
 }
 
