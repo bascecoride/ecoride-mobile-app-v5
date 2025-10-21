@@ -9,11 +9,11 @@ import { commonStyles } from "@/styles/commonStyles";
 import ProfileModal from "./ProfileModal";
 
 const cubes = [
-  { name: "Single", imageUri: require("@/assets/icons/bike.png") },
-  { name: "Tricycle", imageUri: require("@/assets/icons/auto.png") },
-  { name: "Four Wheel", imageUri: require("@/assets/icons/cab.png") },
- // { name: "Parcel", imageUri: require("@/assets/icons/parcel.png") },
-  { name: "Four Wheel Premium", imageUri: require("@/assets/icons/cab_premium.png") },
+  { name: "Single", imageUri: require("@/assets/icons/SingleMotorcycle-NoBG.png") },
+  { name: "Tricycle", imageUri: require("@/assets/icons/Tricycle-NoBG.png") },
+  { name: "Four Wheel", imageUri: require("@/assets/icons/Car-NoBG.png") },
+ // { name: "Coming Soon...", imageUri: require("@/assets/icons/coming_soon.png") },
+ // { name: "Four Wheel Premium", imageUri: require("@/assets/icons/cab_premium.png") },
 ];
 
 const SheetContent = () => {

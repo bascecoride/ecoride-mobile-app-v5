@@ -6,6 +6,7 @@ import CustomText from "../shared/CustomText";
 import { vehicleIcons } from "@/utils/mapUtils";
 import { MaterialCommunityIcons, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { resetAndNavigate } from "@/utils/Helpers";
+import AnonymousRatingModal from "./AnonymousRatingModal";
 
 type VehicleType = "Single Motorcycle" | "Tricycle" | "Cab";
 
@@ -28,6 +29,7 @@ interface RideCompletedSheetProps {
 const RideCompletedSheet: FC<RideCompletedSheetProps> = ({ item, onNavigateHome }) => {
   const [countdown, setCountdown] = useState(10);
   const [isAutoNavigating, setIsAutoNavigating] = useState(true);
+  const [ratingModalVisible, setRatingModalVisible] = useState(false);
 
   useEffect(() => {
     if (isAutoNavigating && countdown > 0) {
@@ -188,29 +190,29 @@ const RideCompletedSheet: FC<RideCompletedSheetProps> = ({ item, onNavigateHome 
         </View>
 
         {/* Rating Section */}
-        <View style={{ 
-          backgroundColor: '#fff3cd', 
-          padding: 15, 
-          borderRadius: 10, 
-          marginVertical: 10,
-          borderLeftWidth: 4,
-          borderLeftColor: '#ffc107'
-        }}>
-          <CustomText fontFamily="SemiBold" fontSize={12} style={{ marginBottom: 5 }}>
-            Rate Your Experience
-          </CustomText>
-          <CustomText fontSize={10} style={{ color: '#666' }}>
-            Help us improve by rating your ride experience
-          </CustomText>
-          
-          <View style={[commonStyles.flexRow, { marginTop: 10 }]}>
-            {[1, 2, 3, 4, 5].map((star) => (
-              <TouchableOpacity key={star} style={{ marginRight: 5 }}>
-                <Ionicons name="star-outline" size={24} color="#ffc107" />
-              </TouchableOpacity>
-            ))}
+        <TouchableOpacity
+          onPress={() => setRatingModalVisible(true)}
+          style={{ 
+            backgroundColor: '#fff3cd', 
+            padding: 15, 
+            borderRadius: 10, 
+            marginVertical: 10,
+            borderLeftWidth: 4,
+            borderLeftColor: '#ffc107'
+          }}
+        >
+          <View style={[commonStyles.flexRowBetween, { alignItems: 'center' }]}>
+            <View style={{ flex: 1 }}>
+              <CustomText fontFamily="SemiBold" fontSize={12} style={{ marginBottom: 5 }}>
+                Rate Your Experience 🔒
+              </CustomText>
+              <CustomText fontSize={10} style={{ color: '#666' }}>
+                Your rating will be anonymous - tap to rate
+              </CustomText>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#ffc107" />
           </View>
-        </View>
+        </TouchableOpacity>
       </View>
 
       {/* Auto-Navigation Countdown */}
@@ -260,6 +262,14 @@ const RideCompletedSheet: FC<RideCompletedSheetProps> = ({ item, onNavigateHome 
           </CustomText>
         </TouchableOpacity>
       </View>
+
+      {/* Anonymous Rating Modal */}
+      <AnonymousRatingModal
+        visible={ratingModalVisible}
+        onClose={() => setRatingModalVisible(false)}
+        rideId={item._id}
+        riderName={item?.rider?.name}
+      />
     </View>
   );
 };

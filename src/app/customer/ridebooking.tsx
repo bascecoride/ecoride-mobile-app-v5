@@ -1,10 +1,10 @@
-import { View, Text, ScrollView, TouchableOpacity, Image, Alert } from "react-native";
-import React, { memo, useCallback, useMemo, useState } from "react";
+import { View, Text, ScrollView, TouchableOpacity, Image, Alert, ActivityIndicator } from "react-native";
+import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useRoute } from "@react-navigation/native";
 import { useUserStore } from "@/store/userStore";
 import { rideStyles } from "@/styles/rideStyles";
 import { StatusBar } from "expo-status-bar";
-import { calculateFare } from "@/utils/mapUtils";
+import { calculateFare, getEstimatedTravelTime, calculateArrivalTime } from "@/utils/mapUtils";
 import RoutesMap from "@/components/customer/RoutesMap";
 import CustomText from "@/components/shared/CustomText";
 import { router } from "expo-router";
@@ -14,48 +14,115 @@ import { commonStyles } from "@/styles/commonStyles";
 import CustomButton from "@/components/shared/CustomButton";
 import { createRide } from "@/service/rideService";
 
+interface TravelTimeData {
+  durationInSeconds: number;
+  durationText: string;
+  arrivalTime: string;
+}
+
 const RideBooking = () => {
   const route = useRoute() as any;
   const item = route?.params as any;
   const { location } = useUserStore() as any;
   const [selectedOption, setSelectedOption] = useState("Bike");
   const [loading, setLoading] = useState(false);
+  const [travelTimes, setTravelTimes] = useState<Record<string, TravelTimeData>>({});
+  const [loadingTravelTimes, setLoadingTravelTimes] = useState(true);
 
   const farePrices = useMemo(
     () => calculateFare(parseFloat(item?.distanceInKm)),
     [item?.distanceInKm]
   );
 
-  const rideOptions = useMemo(
-    () => [
+  // Fetch travel times for all vehicle types
+  useEffect(() => {
+    const fetchTravelTimes = async () => {
+      if (!item?.drop_latitude || !item?.drop_longitude || !location?.latitude || !location?.longitude) {
+        setLoadingTravelTimes(false);
+        return;
+      }
+
+      setLoadingTravelTimes(true);
+      const vehicleTypes: Array<'Single Motorcycle' | 'Tricycle' | 'Cab'> = ['Single Motorcycle', 'Tricycle', 'Cab'];
+      const times: Record<string, TravelTimeData> = {};
+
+      try {
+        // Fetch travel times for all vehicle types in parallel
+        const results = await Promise.all(
+          vehicleTypes.map(vehicleType =>
+            getEstimatedTravelTime(
+              parseFloat(location.latitude),
+              parseFloat(location.longitude),
+              parseFloat(item.drop_latitude),
+              parseFloat(item.drop_longitude),
+              vehicleType
+            )
+          )
+        );
+
+        vehicleTypes.forEach((vehicleType, index) => {
+          const result = results[index];
+          times[vehicleType] = {
+            durationInSeconds: result.durationInSeconds,
+            durationText: result.durationText,
+            arrivalTime: calculateArrivalTime(result.durationInSeconds),
+          };
+        });
+
+        setTravelTimes(times);
+      } catch (error) {
+        console.error('Error fetching travel times:', error);
+      } finally {
+        setLoadingTravelTimes(false);
+      }
+    };
+
+    fetchTravelTimes();
+  }, [item?.drop_latitude, item?.drop_longitude, location?.latitude, location?.longitude]);
+
+  const rideOptions = useMemo(() => {
+    // Determine which vehicle is fastest
+    let fastestVehicle = 'Single Motorcycle';
+    let minDuration = travelTimes['Single Motorcycle']?.durationInSeconds || Infinity;
+    
+    if (travelTimes['Tricycle']?.durationInSeconds < minDuration) {
+      fastestVehicle = 'Tricycle';
+      minDuration = travelTimes['Tricycle'].durationInSeconds;
+    }
+    if (travelTimes['Cab']?.durationInSeconds < minDuration) {
+      fastestVehicle = 'Cab';
+    }
+
+    return [
       {
         type: "Single Motorcycle",
         seats: 1,
-        time: "1 min",
-        dropTime: "4:28 pm",
+        time: travelTimes['Single Motorcycle']?.durationText || 'Calculating...',
+        dropTime: travelTimes['Single Motorcycle']?.arrivalTime || '--',
         price: farePrices?.["Single Motorcycle"],
-        isFastest: true,
-        icon: require("@/assets/icons/bike.png"),
+        isFastest: fastestVehicle === 'Single Motorcycle',
+        icon: require("@/assets/icons/SingleMotorcycle-NoBG.png"),
       },
       {
         type: "Tricycle",
         seats: 3,
-        time: "1 min",
-        dropTime: "4:30 pm",
+        time: travelTimes['Tricycle']?.durationText || 'Calculating...',
+        dropTime: travelTimes['Tricycle']?.arrivalTime || '--',
         price: farePrices["Tricycle"],
-        icon: require("@/assets/icons/auto.png"),
+        isFastest: fastestVehicle === 'Tricycle',
+        icon: require("@/assets/icons/Tricycle-NoBG.png"),
       },
       {
         type: "Cab",
         seats: 4,
-        time: "1 min",
-        dropTime: "4:28 pm",
+        time: travelTimes['Cab']?.durationText || 'Calculating...',
+        dropTime: travelTimes['Cab']?.arrivalTime || '--',
         price: farePrices["Cab"],
-        icon: require("@/assets/icons/cab.png"),
+        isFastest: fastestVehicle === 'Cab',
+        icon: require("@/assets/icons/Car-NoBG.png"),
       },
-    ],
-    [farePrices]
-  );
+    ];
+  }, [farePrices, travelTimes]);
 
   const handleOptionSelect = useCallback((type: string) => {
     setSelectedOption(type);
@@ -150,19 +217,31 @@ const RideBooking = () => {
       )}
 
       <View style={rideStyles.rideSelectionContainer}>
-        <ScrollView
-          contentContainerStyle={rideStyles?.scrollContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          {rideOptions?.map((ride, index) => (
-            <RideOption
-              key={index}
-              ride={ride}
-              selected={selectedOption}
-              onSelect={handleOptionSelect}
-            />
-          ))}
-        </ScrollView>
+        {/* Header Section */}
+        
+
+        {loadingTravelTimes ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 }}>
+            <ActivityIndicator size="large" color="#FFD700" />
+            <CustomText fontSize={12} style={{ marginTop: 12, opacity: 0.7 }}>
+              Calculating travel times...
+            </CustomText>
+          </View>
+        ) : (
+          <ScrollView
+            contentContainerStyle={rideStyles?.scrollContainer}
+            showsVerticalScrollIndicator={false}
+          >
+            {rideOptions?.map((ride, index) => (
+              <RideOption
+                key={index}
+                ride={ride}
+                selected={selectedOption}
+                onSelect={handleOptionSelect}
+              />
+            ))}
+          </ScrollView>
+        )}
       </View>
 
       <TouchableOpacity
@@ -241,8 +320,10 @@ const RideOption = memo(({ ride, selected, onSelect }: any) => (
     onPress={() => onSelect(ride?.type)}
     style={[
       rideStyles.rideOption,
-      { borderColor: selected === ride.type ? "#222" : "#ddd" },
+      { borderColor: selected === ride.type ? "#FFD700" : "#E0E0E0" },
+      selected === ride.type && rideStyles.rideOptionSelected,
     ]}
+    activeOpacity={0.7}
   >
     <View style={commonStyles.flexRowBetween}>
       <Image source={ride?.icon} style={rideStyles?.rideIcon} />
@@ -260,7 +341,11 @@ const RideOption = memo(({ ride, selected, onSelect }: any) => (
       </View>
 
       <View style={rideStyles?.priceContainer}>
-        <CustomText fontFamily="Medium" fontSize={14}>
+        <CustomText 
+          fontFamily="Medium" 
+          fontSize={16}
+          style={{ color: selected === ride.type ? 'green' : '#000' }}
+        >
           ₱{ride?.price?.toFixed(2)}
         </CustomText>
       </View>

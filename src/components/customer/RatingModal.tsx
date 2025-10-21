@@ -28,6 +28,7 @@ const RatingModal: React.FC<RatingModalProps> = ({
 }) => {
   const [rating, setRating] = useState<number>(0);
   const [comment, setComment] = useState<string>('');
+  const [displayName, setDisplayName] = useState<string>(''); // ✅ NICKNAME STATE
   const [loading, setLoading] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [existingRating, setExistingRating] = useState<any>(null);
@@ -45,11 +46,13 @@ const RatingModal: React.FC<RatingModalProps> = ({
     if (result.rated && result.rating) {
       setRating(result.rating.rating);
       setComment(result.rating.comment || '');
+      setDisplayName(result.rating.displayName || ''); // ✅ LOAD EXISTING NICKNAME
       setExistingRating(result.rating);
       setAlreadyRated(true);
     } else {
       setRating(0);
       setComment('');
+      setDisplayName(''); // ✅ RESET NICKNAME
       setExistingRating(null);
       setAlreadyRated(false);
     }
@@ -62,7 +65,8 @@ const RatingModal: React.FC<RatingModalProps> = ({
     }
 
     setSubmitting(true);
-    const result = await submitRating(rideId, rating, comment);
+    // ✅ SEND NICKNAME TO SERVER
+    const result = await submitRating(rideId, rating, comment, displayName);
     setSubmitting(false);
     
     if (result.success) {
@@ -136,6 +140,37 @@ const RatingModal: React.FC<RatingModalProps> = ({
                 )}
               </View>
               
+              {/* ✅ NICKNAME INPUT FIELD */}
+              <View style={styles.nicknameContainer}>
+                <CustomText fontFamily="Medium" fontSize={14} style={styles.nicknameLabel}>
+                  {alreadyRated ? 'Your nickname' : 'Nickname/Alias (Optional)'}
+                </CustomText>
+                <CustomText fontFamily="Regular" fontSize={11} style={styles.helperText}>
+                  🔒 Your real identity stays anonymous
+                </CustomText>
+                {alreadyRated ? (
+                  <View style={styles.readOnlyNickname}>
+                    <CustomText fontFamily="Regular" fontSize={14} style={styles.nicknameText}>
+                      {displayName || 'Anonymous Passenger'}
+                    </CustomText>
+                  </View>
+                ) : (
+                  <>
+                    <TextInput
+                      style={styles.nicknameInput}
+                      placeholder="e.g., Happy Rider, John D."
+                      placeholderTextColor="#999999"
+                      value={displayName}
+                      onChangeText={setDisplayName}
+                      maxLength={50}
+                    />
+                    <CustomText fontFamily="Regular" fontSize={10} style={styles.characterCount}>
+                      {displayName.length}/50 characters
+                    </CustomText>
+                  </>
+                )}
+              </View>
+
               <View style={styles.commentContainer}>
                 <CustomText fontFamily="Medium" fontSize={14} style={styles.commentLabel}>
                   {alreadyRated ? 'Your comment' : 'Leave a comment (optional)'}
@@ -283,6 +318,45 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 10,
     marginBottom: 5,
+  },
+  // ✅ NICKNAME STYLES
+  nicknameContainer: {
+    width: '100%',
+    marginBottom: 15,
+  },
+  nicknameLabel: {
+    marginBottom: 3,
+    color: '#555555',
+  },
+  helperText: {
+    color: '#757575',
+    marginBottom: 8,
+    fontSize: RFValue(11),
+  },
+  nicknameInput: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    padding: 10,
+    fontFamily: 'Regular',
+    fontSize: RFValue(14),
+    backgroundColor: '#FFFFFF',
+  },
+  readOnlyNickname: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    padding: 12,
+    width: '100%',
+  },
+  nicknameText: {
+    color: '#555555',
+  },
+  characterCount: {
+    textAlign: 'right',
+    color: '#999999',
+    marginTop: 4,
+    fontSize: RFValue(10),
   },
 });
 

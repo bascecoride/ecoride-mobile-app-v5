@@ -9,6 +9,7 @@ interface CounterButtonProps {
   onPress: () => void;
   initialCount: number;
   onCountdownEnd: () => void;
+  disabled?: boolean; // Add disabled prop
 }
 
 const CounterButton: FC<CounterButtonProps> = ({
@@ -16,29 +17,39 @@ const CounterButton: FC<CounterButtonProps> = ({
   onPress,
   initialCount,
   onCountdownEnd,
+  disabled = false, // Default to false
 }) => {
   return (
-    <TouchableOpacity onPress={onPress} style={styles.container}>
+    <TouchableOpacity 
+      onPress={disabled ? undefined : onPress} 
+      disabled={disabled}
+      style={[
+        styles.container,
+        disabled && styles.disabledContainer
+      ]}
+    >
       <CustomText fontFamily="Medium" fontSize={12} style={styles.text}>
-        {title}
+        {disabled ? "🔒 Locked" : title}
       </CustomText>
-      <View style={styles.counter}>
-        <CountdownCircleTimer
-          onComplete={onCountdownEnd}
-          isPlaying
-          duration={initialCount}
-          size={30}
-          strokeWidth={3}
-          colors={["#004777", "#F7B801", "#A30000", "#A30000"]}
-          colorsTime={[12, 5, 2, 0]}
-        >
-          {({ remainingTime }) => (
-            <CustomText fontSize={10} fontFamily="SemiBold">
-              {remainingTime}
-            </CustomText>
-          )}
-        </CountdownCircleTimer>
-      </View>
+      {!disabled && (
+        <View style={styles.counter}>
+          <CountdownCircleTimer
+            onComplete={onCountdownEnd}
+            isPlaying
+            duration={initialCount}
+            size={30}
+            strokeWidth={3}
+            colors={["#004777", "#F7B801", "#A30000", "#A30000"]}
+            colorsTime={[30, 10, 5, 0]}
+          >
+            {({ remainingTime }) => (
+              <CustomText fontSize={10} fontFamily="SemiBold">
+                {remainingTime}
+              </CustomText>
+            )}
+          </CountdownCircleTimer>
+        </View>
+      )}
     </TouchableOpacity>
   );
 };
@@ -50,6 +61,10 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 10,
     backgroundColor: Colors.primary,
+  },
+  disabledContainer: {
+    backgroundColor: "#cccccc",
+    opacity: 0.6,
   },
   counter: {
     backgroundColor: "white",

@@ -1,4 +1,4 @@
-import { View, Text, Image, TouchableOpacity } from "react-native";
+import { View, Text, Image, TouchableOpacity, Alert } from "react-native";
 import React, { FC, memo } from "react";
 import { useRiderStore } from "@/store/riderStore";
 import { acceptRideOffer, cancelRideOffer } from "@/service/rideService";
@@ -25,8 +25,23 @@ const RiderRidesItem: FC<{ item: RideItem; removeIt: () => void }> = ({
   item,
   removeIt,
 }) => {
-  const { location } = useRiderStore();
+  const { location, user } = useRiderStore();
+  
+  // Check if ride matches rider's vehicle type
+  const riderVehicleType = user?.vehicleType;
+  const isVehicleMatch = !riderVehicleType || item.vehicle === riderVehicleType;
+  
   const acceptRide = async () => {
+    // Prevent accepting if vehicle type doesn't match
+    if (!isVehicleMatch) {
+      Alert.alert(
+        "Vehicle Type Mismatch",
+        `This ride requires a ${item.vehicle}, but your vehicle type is ${riderVehicleType}. Please update your profile or choose a matching ride.`,
+        [{ text: "OK" }]
+      );
+      return;
+    }
+    
     acceptRideOffer(item?._id);
   };
 
@@ -41,24 +56,50 @@ const RiderRidesItem: FC<{ item: RideItem; removeIt: () => void }> = ({
     <Animated.View
       entering={FadeInLeft.duration(500)}
       exiting={FadeOutRight.duration(500)}
-      style={orderStyles.container}
+      style={[
+        orderStyles.container,
+        // Add visual styling for mismatched rides
+        !isVehicleMatch && {
+          opacity: 0.5,
+          backgroundColor: '#f5f5f5',
+          borderColor: '#ff6b6b',
+          borderWidth: 2,
+        }
+      ]}
     >
+      {/* Vehicle Type Mismatch Warning Banner */}
+      {!isVehicleMatch && (
+        <View style={{
+          backgroundColor: '#ff6b6b',
+          padding: 8,
+          marginBottom: 10,
+          borderRadius: 5,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+        }}>
+          <Ionicons name="warning" size={20} color="white" />
+          <CustomText fontSize={10} style={{ color: 'white', flex: 1 }}>
+            ⚠️ Vehicle Mismatch: Requires {item.vehicle}, you have {riderVehicleType}
+          </CustomText>
+        </View>
+      )}
       <View style={commonStyles.flexRowBetween}>
         <View style={commonStyles.flexRow}>
           {item.vehicle && (
             <Image
               source={vehicleIcons![item.vehicle]?.icon}
-              style={orderStyles.rideIcon}
+              style={[
+                orderStyles.rideIcon,
+                !isVehicleMatch && { opacity: 0.5 }
+              ]}
             />
           )}
           <CustomText style={{ textTransform: "capitalize" }} fontSize={11}>
             {item?.vehicle}
+            {!isVehicleMatch && " ❌"}
           </CustomText>
         </View>
-
-        <CustomText fontSize={11} fontFamily="SemiBold">
-          #RID{item?._id?.slice(0, 5).toUpperCase()}
-        </CustomText>
       </View>
 
       <View style={orderStyles?.locationsContainer}>
@@ -144,9 +185,10 @@ const RiderRidesItem: FC<{ item: RideItem; removeIt: () => void }> = ({
 
         <CounterButton
           onCountdownEnd={removeIt}
-          initialCount={12}
+          initialCount={30}
           onPress={acceptRide}
-          title="Accept"
+          title={isVehicleMatch ? "Accept" : "Locked"}
+          disabled={!isVehicleMatch}
         />
       </View>
     </Animated.View>

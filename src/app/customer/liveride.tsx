@@ -101,34 +101,45 @@ const LiveRide = () => {
 
       on("rideCanceled", (data) => {
         console.log('Ride canceled:', data);
-        if (data?.ride) {
-          setRideData(data.ride);
-          // Leave the ride room immediately to stop receiving updates
-          emit("leaveRide", id);
+        // CRITICAL: Only process if this is OUR ride
+        const cancelledRideId = data?.ride?._id || data?.rideId;
+        if (cancelledRideId === id) {
+          if (data?.ride) {
+            setRideData(data.ride);
+            // Leave the ride room immediately to stop receiving updates
+            emit("leaveRide", id);
+          } else {
+            setError('Ride was canceled');
+            setIsLoading(false);
+            emit("leaveRide", id);
+            cleanupAndNavigateHome();
+          }
         } else {
-          setError('Ride was canceled');
-          setIsLoading(false);
-          emit("leaveRide", id);
-          cleanupAndNavigateHome();
+          console.log(`Ignoring cancellation for different ride: ${cancelledRideId} (our ride: ${id})`);
         }
       });
 
       on("riderCancelledRide", (data) => {
         console.log("Rider cancelled ride:", data);
-        // Leave the ride room immediately
-        emit("leaveRide", id);
-        Alert.alert(
-          "Rider Cancelled Ride",
-          `${data.riderName} has cancelled the ride. You will be redirected to the home screen.`,
-          [
-            {
-              text: "OK",
-              onPress: () => {
-                resetAndNavigate("/customer/home");
+        // CRITICAL: Only show alert if this is OUR ride
+        if (data?.rideId === id) {
+          // Leave the ride room immediately
+          emit("leaveRide", id);
+          Alert.alert(
+            "Rider Cancelled Ride",
+            `${data.riderName} has cancelled the ride. You will be redirected to the home screen.`,
+            [
+              {
+                text: "OK",
+                onPress: () => {
+                  resetAndNavigate("/customer/home");
+                }
               }
-            }
-          ]
-        );
+            ]
+          );
+        } else {
+          console.log(`Ignoring rider cancellation for different ride: ${data?.rideId} (our ride: ${id})`);
+        }
       });
 
       on("error", (error) => {
@@ -270,6 +281,7 @@ const LiveRide = () => {
                 }
               : null
           }
+          vehicleType={rideData?.vehicle}
         />
       ) : isLoading ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5' }}>

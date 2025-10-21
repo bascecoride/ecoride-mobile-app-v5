@@ -91,10 +91,11 @@ export const uiStyles = StyleSheet.create({
     },
     cubes: {
         flexDirection: 'row',
-        height: 100,
+        height: 200,
         marginVertical: 20,
         alignItems: 'baseline',
-        justifyContent: 'space-between',
+        width: '137%',
+        justifyContent: 'flex-start',
     },
     adImage: {
         height: '100%',

@@ -47,11 +47,11 @@ interface RideHistoryItemProps {
 
 const getVehicleIcon = (vehicle: string) => {
   const icons = {
-    'Single Motorcycle': require('@/assets/icons/bike.png'),
-    'Tricycle': require('@/assets/icons/auto.png'),
-    'Cab': require('@/assets/icons/cab.png'),
+    'Single Motorcycle': require('@/assets/icons/SingleMotorcycle-NoBG.png'),
+    'Tricycle': require('@/assets/icons/Tricycle-NoBG.png'),
+    'Cab': require('@/assets/icons/Car-NoBG.png'),
   };
-  return icons[vehicle as keyof typeof icons] || require('@/assets/icons/bike.png');
+  return icons[vehicle as keyof typeof icons] || require('@/assets/icons/SingleMotorcycle-NoBG.png');
 };
 
 const getStatusColor = (status: string) => {

@@ -68,8 +68,8 @@ const styles = StyleSheet.create({
     marginVertical: 7,
   },
   focusedContainer: {
-    borderColor: "#ccc",
-    borderWidth: 1,
+    borderColor: "#4CAF50",
+    borderWidth: 1.5,
   },
   dot: {
     width: 6,

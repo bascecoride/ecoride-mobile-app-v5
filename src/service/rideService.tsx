@@ -126,18 +126,30 @@ export const getRideHistory = async (status?: string) => {
 };
 
 // Rating related functions
-export const submitRating = async (rideId: string, rating: number, comment?: string) => {
+export const submitRating = async (rideId: string, rating: number, comment?: string, displayName?: string) => {
   try {
     const res = await api.post('/rating/create', {
       rideId,
       rating,
-      comment
+      comment,
+      displayName
     });
     return { success: true, data: res.data };
   } catch (error: any) {
     console.log("Error: Submit Rating ", error);
     Alert.alert("Error", "Failed to submit rating");
     return { success: false, error };
+  }
+};
+
+// Create rating with anonymous display name support
+export const createRating = async (data: { rideId: string; rating: number; comment?: string; displayName?: string }) => {
+  try {
+    const res = await api.post('/rating/create', data);
+    return res.data;
+  } catch (error: any) {
+    console.log("Error: Create Rating ", error);
+    throw error;
   }
 };
 

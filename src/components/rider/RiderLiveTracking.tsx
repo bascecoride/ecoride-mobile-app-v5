@@ -17,7 +17,8 @@ const RiderLiveTracking: FC<{
   pickup: any;
   rider: any;
   status: string;
-}> = ({ drop, status, pickup, rider }) => {
+  vehicleType?: string;
+}> = ({ drop, status, pickup, rider, vehicleType }) => {
   const mapRef = useRef<MapView>(null);
   const [isUserInteracting, setIsUserInteracting] = useState(false);
 
@@ -188,7 +189,13 @@ const RiderLiveTracking: FC<{
           >
             <View style={{ transform: [{ rotate: `${rider?.heading || 0}deg` }] }}>
               <Image
-                source={require("@/assets/icons/cab_marker.png")}
+                source={
+                  vehicleType === "Single Motorcycle"
+                    ? require("@/assets/icons/bike_marker.png")
+                    : vehicleType === "Tricycle"
+                    ? require("@/assets/icons/auto_marker.png")
+                    : require("@/assets/icons/cab_marker.png")
+                }
                 style={{ height: 40, width: 40, resizeMode: "contain" }}
               />
             </View>

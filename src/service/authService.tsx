@@ -105,7 +105,7 @@ export const login = async (
         "Your account has been disapproved. Please contact support for further assistance.",
         [{ text: "OK" }]
       );
-      return;
+      return { success: false };
     }
     
     if (res.data.user.role === "customer") {
@@ -124,12 +124,50 @@ export const login = async (
     }
 
     await updateAccessToken();
+    
+    return { success: true };
   } catch (error: any) {
     console.log("Error details:", error);
     
     if (error.response) {
       console.log("Response data:", error.response.data);
       console.log("Response status:", error.response.status);
+      
+      // Check for disapproved status with penalty
+      if (error.response.data?.status === "disapproved" && error.response.data?.hasPenalty) {
+        return {
+          success: false,
+          penaltyInfo: {
+            disapprovalReason: error.response.data.disapprovalReason,
+            penaltyComment: error.response.data.penaltyComment,
+            liftDate: error.response.data.penaltyLiftDate,
+            isPenaltyActive: error.response.data.isPenaltyActive
+          }
+        };
+      }
+      
+      // Check for disapproved status without penalty
+      if (error.response.data?.status === "disapproved") {
+        return {
+          success: false,
+          rejectionInfo: {
+            reason: error.response.data.disapprovalReason || error.response.data.message,
+            deadline: null
+          }
+        };
+      }
+      
+      // Check for pending status
+      if (error.response.data?.status === "pending") {
+        return {
+          success: false,
+          rejectionInfo: {
+            reason: error.response.data.message,
+            deadline: null
+          }
+        };
+      }
+      
       Alert.alert("Login Error", `${error.response.data?.message || 'Invalid credentials'}`);
     } else if (error.request) {
       console.log("No response received from server");
@@ -138,6 +176,8 @@ export const login = async (
       console.log("Error message:", error.message);
       Alert.alert("Login Error", error.message || "An unknown error occurred");
     }
+    
+    return { success: false };
   }
 };
 

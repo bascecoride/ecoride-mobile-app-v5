@@ -67,24 +67,39 @@ export const rideStyles = StyleSheet.create({
         alignItems: 'center',
     },
     rideIcon: {
-        width: 30,
-        height: 30,
+        width: 40,
+        height: 40,
         resizeMode: 'contain'
     },
     scrollContainer: {
         paddingBottom: 160,
+        paddingTop: 10,
         width: screenWidth,
-        borderColor: '#777',
         paddingHorizontal: 10,
     },
     rideOption: {
         width: '100%',
-        padding: 15,
-        borderRadius: 8,
+        padding: 16,
+        borderRadius: 12,
         marginVertical: 5,
         backgroundColor: '#fff',
-        borderWidth: 1,
-
+        borderWidth: 2,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        shadowColor: '#000',
+        elevation: 3,
+    },
+    rideOptionSelected: {
+        backgroundColor: '#FFFBEA',
+        borderColor: '#FFD700',
+        borderWidth: 2.5,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
+        shadowColor: '#FFD700',
+        elevation: 6,
+        transform: [{ scale: 1.02 }],
     },
     rideDetails: {
         width: "70%"
@@ -94,8 +109,14 @@ export const rideStyles = StyleSheet.create({
     },
     fastestLabel: {
         color: 'green',
-        fontSize: 10,
-        marginLeft: 5
+        
+        fontSize: 9,
+        fontWeight: '700',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+        marginLeft: 6,
+        overflow: 'hidden',
     },
     discountedPrice: {
         textDecorationLine: 'line-through',

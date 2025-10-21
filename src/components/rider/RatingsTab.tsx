@@ -13,10 +13,8 @@ interface RatingItemProps {
     rating: number;
     comment?: string;
     createdAt: string;
-    customer: {
-      firstName: string;
-      lastName: string;
-    };
+    displayName?: string;
+    isAnonymous?: boolean;
     ride: {
       vehicle: string;
       pickup: {
@@ -63,7 +61,8 @@ const RatingItem: React.FC<RatingItemProps> = ({ rating }) => {
   };
 
   const formattedDate = formatDate(new Date(rating.createdAt));
-  const customerName = `${rating.customer?.firstName || ''} ${rating.customer?.lastName || ''}`.trim() || 'Anonymous';
+  // Use displayName for anonymity - never show real customer name
+  const displayName = rating.displayName || 'Anonymous Passenger';
 
   // Add null checks for ride property and its nested properties
   const rideVehicle = rating.ride?.vehicle ? getVehicleName(rating.ride.vehicle) : 'Unknown';
@@ -77,13 +76,17 @@ const RatingItem: React.FC<RatingItemProps> = ({ rating }) => {
           <View style={styles.avatarContainer}>
             <Ionicons name="person" size={RFValue(16)} color="#FFFFFF" />
           </View>
-          <CustomText fontFamily="Medium" fontSize={14}>
-            {customerName}
+          <View style={styles.nameContainer}>
+            <CustomText fontFamily="Medium" fontSize={14} numberOfLines={1}>
+              {displayName}
+            </CustomText>
+          </View>
+        </View>
+        <View style={styles.dateContainer}>
+          <CustomText fontFamily="Regular" fontSize={11} style={styles.dateText} numberOfLines={1}>
+            {formattedDate}
           </CustomText>
         </View>
-        <CustomText fontFamily="Regular" fontSize={12} style={styles.dateText}>
-          {formattedDate}
-        </CustomText>
       </View>
 
       <View style={styles.ratingStars}>
@@ -359,12 +362,23 @@ const styles = StyleSheet.create({
   ratingHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 10,
   },
   customerInfo: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+    marginRight: 8,
+  },
+  nameContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  dateContainer: {
+    flexShrink: 0,
+    minWidth: 80,
+    alignItems: 'flex-end',
   },
   avatarContainer: {
     width: RFValue(30),
@@ -377,6 +391,7 @@ const styles = StyleSheet.create({
   },
   dateText: {
     color: '#757575',
+    textAlign: 'right',
   },
   ratingStars: {
     flexDirection: 'row',

@@ -41,10 +41,10 @@ const LiveTrackingSheet: FC<{ item: RideItem }> = ({ item }) => {
           <View>
             <CustomText fontSize={10}>
               {item?.status === "START"
-                ? "Rider near you"
+                ? "Rider OTW to You..."
                 : item?.status === "ARRIVED"
-                ? "Ride in Progress..."
-                : "Ride Completed! 🎉"}
+                ? "RIDE IN PROGRESS..."
+                : "RIDE COMPLETED! 🎉"}
             </CustomText>
 
             {item?.status === "START" && item?.otp && (
@@ -79,6 +79,38 @@ const LiveTrackingSheet: FC<{ item: RideItem }> = ({ item }) => {
           </CustomText>
         )}
       </View>
+
+      {/* Rider Name Display - Only show when ride is in progress */}
+      {(item?.status === "START" || item?.status === "ARRIVED") && item?.rider && (
+        <View style={{
+          backgroundColor: '#2196F3',
+          marginHorizontal: 10,
+          marginTop: 10,
+          paddingHorizontal: 14,
+          paddingVertical: 10,
+          borderRadius: 10,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.15,
+          shadowRadius: 3.84,
+          elevation: 3,
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+            <MaterialCommunityIcons name="account-circle" size={18} color="white" style={{ marginRight: 6 }} />
+            <CustomText fontFamily="Bold" fontSize={11} style={{ color: 'white' }}>
+              Your Rider
+            </CustomText>
+          </View>
+          <CustomText fontFamily="SemiBold" fontSize={15} style={{ color: 'white' }}>
+            {item.rider.firstName} {item.rider.lastName}
+          </CustomText>
+          {item.rider.vehicleType && (
+            <CustomText fontSize={10} style={{ color: 'rgba(255,255,255,0.9)', marginTop: 2 }}>
+              🏍️ {item.rider.vehicleType}
+            </CustomText>
+          )}
+        </View>
+      )}
 
       <View style={{ padding: 10 }}>
         <CustomText fontFamily="SemiBold" fontSize={12}>

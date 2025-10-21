@@ -129,24 +129,35 @@ const LiveRide = () => {
 
       on("rideCanceled", (data) => {
         console.log("Ride canceled:", data);
-        resetAndNavigate("/rider/home");
-        Alert.alert("Ride Canceled", data?.message || "The ride has been canceled");
+        // CRITICAL: Only show alert if this is OUR ride
+        const cancelledRideId = data?.ride?._id || data?.rideId;
+        if (cancelledRideId === id) {
+          resetAndNavigate("/rider/home");
+          Alert.alert("Ride Canceled", data?.message || "The ride has been canceled");
+        } else {
+          console.log(`Ignoring cancellation for different ride: ${cancelledRideId} (our ride: ${id})`);
+        }
       });
 
       on("passengerCancelledRide", (data) => {
         console.log("Passenger cancelled ride:", data);
-        Alert.alert(
-          "Passenger Cancelled Ride",
-          `${data.passengerName} has cancelled the ride. You will be redirected to the home screen.`,
-          [
-            {
-              text: "OK",
-              onPress: () => {
-                resetAndNavigate("/rider/home");
+        // CRITICAL: Only show alert if this is OUR ride
+        if (data?.rideId === id) {
+          Alert.alert(
+            "Passenger Cancelled Ride",
+            `${data.passengerName} has cancelled the ride. You will be redirected to the home screen.`,
+            [
+              {
+                text: "OK",
+                onPress: () => {
+                  resetAndNavigate("/rider/home");
+                }
               }
-            }
-          ]
-        );
+            ]
+          );
+        } else {
+          console.log(`Ignoring passenger cancellation for different ride: ${data?.rideId} (our ride: ${id})`);
+        }
       });
 
       on("rideUpdate", (data) => {
@@ -190,9 +201,45 @@ const LiveRide = () => {
               longitude: currentLocation?.longitude || location?.longitude,
               heading: currentLocation?.heading || location?.heading,
             }}
+            vehicleType={rideData?.vehicle}
           />
 
-          {/* Cancel Button Overlay - No OTP */}
+          {/* Passenger Name Display - Only show when ride is in progress */}
+          {(rideData?.status === "START" || rideData?.status === "ARRIVED") && rideData?.customer && (
+            <View style={{
+              position: 'absolute',
+              top: 60,
+              left: 20,
+              backgroundColor: '#4CAF50',
+              paddingHorizontal: 16,
+              paddingVertical: 12,
+              borderRadius: 12,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.25,
+              shadowRadius: 3.84,
+              elevation: 5,
+              maxWidth: '60%',
+              zIndex: 1000,
+            }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Ionicons name="person" size={16} color="white" style={{ marginRight: 6 }} />
+                <CustomText fontFamily="Bold" fontSize={12} style={{ color: 'white' }}>
+                  Passenger
+                </CustomText>
+              </View>
+              <CustomText fontFamily="SemiBold" fontSize={14} style={{ color: 'white', marginTop: 4 }}>
+                {rideData.customer.firstName} {rideData.customer.lastName}
+              </CustomText>
+              {rideData.customer.phone && (
+                <CustomText fontSize={11} style={{ color: 'rgba(255,255,255,0.9)', marginTop: 2 }}>
+                  📞 {rideData.customer.phone}
+                </CustomText>
+              )}
+            </View>
+          )}
+
+          {/* Cancel Button Overlay - Repositioned to top-right */}
           <View style={{
             position: 'absolute',
             top: 60,
@@ -202,19 +249,21 @@ const LiveRide = () => {
             <TouchableOpacity
               style={{
                 backgroundColor: '#ff4444',
-                padding: 12,
-                borderRadius: 25,
+                padding: 14,
+                borderRadius: 30,
                 shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.25,
-                shadowRadius: 3.84,
-                elevation: 5,
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.3,
+                shadowRadius: 4.65,
+                elevation: 8,
                 alignItems: 'center',
                 justifyContent: 'center',
+                borderWidth: 2,
+                borderColor: 'white',
               }}
               onPress={handleCancelRide}
             >
-              <Ionicons name="close" size={20} color="white" />
+              <Ionicons name="close" size={22} color="white" />
             </TouchableOpacity>
           </View>
         </View>
@@ -222,6 +271,13 @@ const LiveRide = () => {
 
       <RiderActionButton
         ride={rideData}
+        riderLocation={
+          currentLocation?.latitude && currentLocation?.longitude
+            ? { latitude: currentLocation.latitude, longitude: currentLocation.longitude }
+            : location?.latitude && location?.longitude
+            ? { latitude: location.latitude, longitude: location.longitude }
+            : undefined
+        }
         title={
           rideData?.status === "START"
             ? "ARRIVED"
@@ -236,7 +292,7 @@ const LiveRide = () => {
           }
           const isSuccess = await updateRideStatus(rideData?._id, "COMPLETED");
           if (isSuccess) {
-            Alert.alert("Congratulations! you rock🎉");
+            Alert.alert("Congratulations! Ride Completed 🎉");
             resetAndNavigate("/rider/home");
           } else {
             Alert.alert("There was an error");

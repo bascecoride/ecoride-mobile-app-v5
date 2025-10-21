@@ -448,16 +448,35 @@ const RiderProfilePage = () => {
                 style={styles.inputDisabled}
               />
 
-              {profileData.vehicleType && (
-                <View style={styles.infoItem}>
-                  <CustomText fontFamily="Medium" fontSize={12} style={styles.infoLabel}>
-                    Vehicle Type:
-                  </CustomText>
-                  <CustomText fontFamily="Regular" fontSize={12} style={styles.infoValue}>
-                    {profileData.vehicleType}
-                  </CustomText>
-                </View>
-              )}
+              <View style={styles.inputContainer}>
+                <CustomText fontFamily="Medium">Vehicle Type</CustomText>
+                {isEditing ? (
+                  <View style={styles.vehicleTypeContainer}>
+                    <TouchableOpacity 
+                      style={[styles.vehicleButton, profileData.vehicleType === "Single Motorcycle" && styles.vehicleButtonSelected]} 
+                      onPress={() => handleInputChange("vehicleType", "Single Motorcycle")}
+                    >
+                      <CustomText fontFamily="Regular" style={[styles.vehicleButtonText, profileData.vehicleType === "Single Motorcycle" && styles.vehicleButtonTextSelected]}>🏍️ Motorcycle</CustomText>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.vehicleButton, profileData.vehicleType === "Tricycle" && styles.vehicleButtonSelected]} 
+                      onPress={() => handleInputChange("vehicleType", "Tricycle")}
+                    >
+                      <CustomText fontFamily="Regular" style={[styles.vehicleButtonText, profileData.vehicleType === "Tricycle" && styles.vehicleButtonTextSelected]}>🛺 Tricycle</CustomText>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.vehicleButton, profileData.vehicleType === "Cab" && styles.vehicleButtonSelected]} 
+                      onPress={() => handleInputChange("vehicleType", "Cab")}
+                    >
+                      <CustomText fontFamily="Regular" style={[styles.vehicleButtonText, profileData.vehicleType === "Cab" && styles.vehicleButtonTextSelected]}>🚗 Four Wheel</CustomText>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={[styles.input, styles.inputDisabled, { justifyContent: 'center' }]}>
+                    <CustomText fontFamily="Regular">{profileData.vehicleType || 'Not specified'}</CustomText>
+                  </View>
+                )}
+              </View>
             </View>
           </View>
 
@@ -812,6 +831,32 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 998,
+  },
+  vehicleTypeContainer: {
+    flexDirection: 'column',
+    gap: 10,
+    marginVertical: 10,
+  },
+  vehicleButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+  },
+  vehicleButtonSelected: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  vehicleButtonText: {
+    color: '#666',
+    fontSize: 14,
+  },
+  vehicleButtonTextSelected: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
 

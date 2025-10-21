@@ -200,8 +200,132 @@ export const getPoints = (places: any) => {
 };
 
 export const vehicleIcons: Record<'Single Motorcycle' | 'Tricycle' | 'Cab', { icon: any }> = {
-    "Single Motorcycle": { icon: require('@/assets/icons/bike.png') },
-    "Tricycle": { icon: require('@/assets/icons/auto.png') },
-    "Cab": { icon: require('@/assets/icons/cab.png') },
+    "Single Motorcycle": { icon: require('@/assets/icons/SingleMotorcycle-NoBG.png') },
+    "Tricycle": { icon: require('@/assets/icons/Tricycle-NoBG.png') },
+    "Cab": { icon: require('@/assets/icons/Car-NoBG.png') },
   };
+
+// Calculate estimated travel time using Google Maps Distance Matrix API
+export const getEstimatedTravelTime = async (
+    originLat: number,
+    originLng: number,
+    destLat: number,
+    destLng: number,
+    vehicleType: 'Single Motorcycle' | 'Tricycle' | 'Cab' = 'Single Motorcycle'
+) => {
+    try {
+        // Use motorcycle mode for bikes, driving for others
+        const travelMode = vehicleType === 'Single Motorcycle' ? 'driving' : 'driving';
+        
+        const response = await axios.get(
+            'https://maps.googleapis.com/maps/api/distancematrix/json',
+            {
+                params: {
+                    origins: `${originLat},${originLng}`,
+                    destinations: `${destLat},${destLng}`,
+                    mode: travelMode,
+                    key: process.env.EXPO_PUBLIC_MAP_API_KEY,
+                },
+                timeout: 10000
+            }
+        );
+
+        if (response.data.status === 'OK' && response.data.rows[0]?.elements[0]?.status === 'OK') {
+            const element = response.data.rows[0].elements[0];
+            const durationInSeconds = element.duration.value;
+            const distanceInMeters = element.distance.value;
+            
+            // Adjust duration based on vehicle type (motorcycles can be faster in traffic)
+            let adjustedDuration = durationInSeconds;
+            if (vehicleType === 'Single Motorcycle') {
+                adjustedDuration = Math.round(durationInSeconds * 0.85); // 15% faster
+            } else if (vehicleType === 'Tricycle') {
+                adjustedDuration = Math.round(durationInSeconds * 1.1); // 10% slower
+            }
+            
+            return {
+                durationInSeconds: adjustedDuration,
+                durationText: formatDuration(adjustedDuration),
+                distanceInMeters,
+                distanceText: element.distance.text,
+            };
+        } else {
+            throw new Error('Distance Matrix API returned no results');
+        }
+    } catch (error) {
+        console.log('Error fetching travel time from Google Maps:', error);
+        // Fallback to simple calculation based on distance
+        return calculateFallbackTravelTime(originLat, originLng, destLat, destLng, vehicleType);
+    }
+};
+
+// Fallback calculation when API fails
+const calculateFallbackTravelTime = (
+    originLat: number,
+    originLng: number,
+    destLat: number,
+    destLng: number,
+    vehicleType: 'Single Motorcycle' | 'Tricycle' | 'Cab'
+) => {
+    const distanceKm = calculateDistance(originLat, originLng, destLat, destLng);
+    const distanceInMeters = distanceKm * 1000;
+    
+    // Average speeds in km/h for different vehicle types in city traffic
+    const averageSpeeds = {
+        'Single Motorcycle': 30, // Faster due to maneuverability
+        'Tricycle': 20,          // Slower, local roads
+        'Cab': 25,               // Moderate speed
+    };
+    
+    const speed = averageSpeeds[vehicleType];
+    const durationInHours = distanceKm / speed;
+    const durationInSeconds = Math.round(durationInHours * 3600);
+    
+    return {
+        durationInSeconds,
+        durationText: formatDuration(durationInSeconds),
+        distanceInMeters,
+        distanceText: `${distanceKm.toFixed(1)} km`,
+    };
+};
+
+// Format duration in seconds to human-readable text
+const formatDuration = (seconds: number): string => {
+    if (seconds < 60) {
+        return '< 1 min';
+    }
+    
+    const minutes = Math.round(seconds / 60);
+    
+    if (minutes < 60) {
+        return `${minutes} min`;
+    }
+    
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    
+    if (remainingMinutes === 0) {
+        return `${hours} hr`;
+    }
+    
+    return `${hours} hr ${remainingMinutes} min`;
+};
+
+// Calculate estimated arrival time
+export const calculateArrivalTime = (durationInSeconds: number): string => {
+    const now = new Date();
+    const arrivalTime = new Date(now.getTime() + durationInSeconds * 1000);
+    
+    // Format time as "h:mm am/pm"
+    let hours = arrivalTime.getHours();
+    const minutes = arrivalTime.getMinutes();
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    
+    hours = hours % 12;
+    hours = hours ? hours : 12; // Convert 0 to 12
+    
+    const minutesStr = minutes < 10 ? `0${minutes}` : minutes;
+    
+    return `${hours}:${minutesStr} ${ampm}`;
+};
   

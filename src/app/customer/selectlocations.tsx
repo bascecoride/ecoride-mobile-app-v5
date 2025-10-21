@@ -107,14 +107,17 @@ export default function LocationSelection() {
 
     const distance = calculateDistance(lat1, lon1, lat2, lon2);
 
-    const minDistance = 0.5; // Minimum distance in km (e.g., 500 meters)
+    // TODO: Adjust minimum distance requirement later if needed
+    // const minDistance = 0.5; // Minimum distance in km (e.g., 500 meters)
     const maxDistance = 50; // Maximum distance in km (e.g., 50 km)
 
-    if (distance < minDistance) {
-      alert(
-        "The selected locations are too close. Please choose locations that are further apart."
-      );
-    } else if (distance > maxDistance) {
+    // Commented out minimum distance validation - no minimum requirement for now
+    // if (distance < minDistance) {
+    //   alert(
+    //     "The selected locations are too close. Please choose locations that are further apart."
+    //   );
+    // } else 
+    if (distance > maxDistance) {
       alert(
         "The selected locations are too far apart. Please select a closer drop location."
       );

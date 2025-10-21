@@ -20,6 +20,8 @@ import CustomButton from "@/components/shared/CustomButton";
 import { login, register } from "@/service/authService";
 import { BASE_URL } from "@/service/config";
 import { Link } from "expo-router";
+import RejectionReasonModal from "@/components/shared/RejectionReasonModal";
+import PenaltyModal from "@/components/shared/PenaltyModal";
 
 export default function Auth() {
   const { updateAccessToken } = useWS();
@@ -50,6 +52,12 @@ export default function Auth() {
   const [cor, setCor] = useState<any>(null);
   const [driverLicense, setDriverLicense] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [showRejectionModal, setShowRejectionModal] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [rejectionDeadline, setRejectionDeadline] = useState<string | null>(null);
+  const [showPenaltyModal, setShowPenaltyModal] = useState(false);
+  const [penaltyComment, setPenaltyComment] = useState("");
+  const [penaltyLiftDate, setPenaltyLiftDate] = useState<string | null>(null);
 
   // Document picker functions
   const pickImage = async (setter: any) => {
@@ -194,11 +202,28 @@ export default function Auth() {
     
     setLoading(true);
     try {
-      await login({ 
+      const result = await login({ 
         role: "rider", 
         email, 
         password 
       }, updateAccessToken);
+      
+      // Check if user has active penalty (disapproved with penalty)
+      if (!result.success && result.penaltyInfo) {
+        // Show both disapproval reason and penalty comment
+        const fullMessage = `Disapproval Reason: ${result.penaltyInfo.disapprovalReason}\n\nPenalty: ${result.penaltyInfo.penaltyComment}`;
+        setPenaltyComment(fullMessage);
+        setPenaltyLiftDate(result.penaltyInfo.liftDate);
+        setShowPenaltyModal(true);
+        return;
+      }
+      
+      // Check if login was rejected (disapproved without penalty or pending)
+      if (!result.success && result.rejectionInfo) {
+        setRejectionReason(result.rejectionInfo.reason);
+        setRejectionDeadline(result.rejectionInfo.deadline);
+        setShowRejectionModal(true);
+      }
     } catch (error) {
       console.error("Login error:", error);
     } finally {
@@ -478,7 +503,7 @@ export default function Auth() {
   const renderLoginForm = () => (
     <>
       <CustomText fontFamily="Medium" variant="h6">
-        Good to see you, Rider!
+        WELCOME DRIVER!
       </CustomText>
 
       <CustomText
@@ -502,12 +527,24 @@ export default function Auth() {
 
       <View style={styles.inputContainer}>
         <CustomText fontFamily="Medium">Password</CustomText>
-        <TextInput
-          style={styles.input}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+        <View style={styles.passwordContainer}>
+          <TextInput
+            style={[styles.input, styles.passwordInput]}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+          />
+          <TouchableOpacity
+            style={styles.eyeIcon}
+            onPress={() => setShowPassword(!showPassword)}
+          >
+            <MaterialIcons
+              name={showPassword ? "visibility" : "visibility-off"}
+              size={20}
+              color="#666"
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <TouchableOpacity 
@@ -522,32 +559,13 @@ export default function Auth() {
           Forgot Password?
         </CustomText>
       </TouchableOpacity>
-
-      <View style={styles.registerLinkContainer}>
-        <CustomText fontFamily="Regular" variant="h7" style={styles.linkPromptText}>
-          Don't have an account?
-        </CustomText>
-        <TouchableOpacity 
-          style={styles.linkButton}
-          onPress={() => setIsLogin(false)}
-          activeOpacity={0.7}
-        >
-          <CustomText
-            fontFamily="SemiBold"
-            variant="h6"
-            style={styles.registerLink}
-          >
-            Register here
-          </CustomText>
-        </TouchableOpacity>
-      </View>
     </>
   );
 
   const renderRegisterForm = () => (
     <>
       <CustomText fontFamily="Medium" variant="h6">
-        Good to see you, Rider!
+        WELCOME DRIVER!
       </CustomText>
 
       <CustomText
@@ -901,19 +919,18 @@ export default function Auth() {
         </View>
       )}
 
-      <View style={styles.registerLinkContainer}>
+      <View style={styles.loginLinkContainer}>
         <CustomText fontFamily="Regular" variant="h7" style={styles.linkPromptText}>
-          Already have an account?
+          Already have an account?{" "}
         </CustomText>
         <TouchableOpacity 
-          style={styles.linkButton}
           onPress={() => setIsLogin(true)}
           activeOpacity={0.7}
         >
           <CustomText
             fontFamily="SemiBold"
-            variant="h6"
-            style={styles.registerLink}
+            variant="h7"
+            style={styles.loginLinkText}
           >
             Login here
           </CustomText>
@@ -1231,6 +1248,26 @@ export default function Auth() {
             By continuing, you agree to the terms and privacy policy of Ecoride App
           </CustomText>
 
+          {!isForgotPassword && !isLogin && (
+            <View style={styles.registerLinkContainer}>
+              <CustomText fontFamily="Regular" variant="h7" style={styles.linkPromptText}>
+                Already have an account?{" "}
+              </CustomText>
+              <TouchableOpacity 
+                onPress={() => setIsLogin(true)}
+                activeOpacity={0.7}
+              >
+                <CustomText
+                  fontFamily="SemiBold"
+                  variant="h7"
+                  style={styles.loginLinkText}
+                >
+                  Login here
+                </CustomText>
+              </TouchableOpacity>
+            </View>
+          )}
+
           <CustomButton
             title={
               isForgotPassword ? (
@@ -1253,8 +1290,44 @@ export default function Auth() {
             loading={loading}
             disabled={loading}
           />
+
+          {!isForgotPassword && isLogin && (
+            <View style={styles.registerPromptContainer}>
+              <CustomText fontFamily="Regular" variant="h7" style={styles.linkPromptText}>
+                Don't have an account?{" "}
+              </CustomText>
+              <TouchableOpacity 
+                onPress={() => setIsLogin(false)}
+                activeOpacity={0.7}
+              >
+                <CustomText
+                  fontFamily="SemiBold"
+                  variant="h7"
+                  style={styles.registerLinkText}
+                >
+                  Register here
+                </CustomText>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </ScrollView>
+
+      {/* Rejection Reason Modal */}
+      <RejectionReasonModal
+        visible={showRejectionModal}
+        reason={rejectionReason}
+        deadline={rejectionDeadline}
+        onClose={() => setShowRejectionModal(false)}
+      />
+      
+      {/* Penalty Modal */}
+      <PenaltyModal
+        visible={showPenaltyModal}
+        comment={penaltyComment}
+        liftDate={penaltyLiftDate}
+        onClose={() => setShowPenaltyModal(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -1277,32 +1350,38 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   registerLinkContainer: {
-    flexDirection: 'column',
-    marginTop: 20,
+    flexDirection: 'row',
+    marginTop: 15,
+    marginBottom: 15,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
+    flexWrap: 'wrap',
+  },
+  registerPromptContainer: {
+    flexDirection: 'row',
+    marginTop: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  loginLinkContainer: {
+    flexDirection: 'row',
+    marginTop: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexWrap: 'wrap',
   },
   linkPromptText: {
     color: '#666',
     textAlign: 'center',
   },
-  linkButton: {
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 25,
-    shadowColor: '#4CAF50',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+  registerLinkText: {
+    color: '#4CAF50',
+    textDecorationLine: 'underline',
   },
-  registerLink: {
-    color: '#FFFFFF',
-    textAlign: 'center',
+  loginLinkText: {
+    color: '#4CAF50',
+    textDecorationLine: 'underline',
   },
   radioContainer: {
     flexDirection: 'row',
