@@ -20,6 +20,7 @@ import { Colors } from "@/utils/Constants";
 import { useWS } from "@/service/WSProvider";
 import CustomText from "@/components/shared/CustomText";
 import { chatNotificationService } from "@/service/chatNotificationService";
+import { disapprovalService } from "@/service/disapprovalService";
 
 const androidHeights = [
   screenHeight * 0.12,
@@ -49,6 +50,9 @@ const CustomerHome = () => {
 
   useEffect(() => {
     getMyRides();
+    
+    // Initialize disapproval service for real-time account status monitoring
+    disapprovalService.initialize({ on, off });
     
     // Subscribe to chat notification service for real-time updates
     const unsubscribe = chatNotificationService.subscribe((count) => {
@@ -148,12 +152,12 @@ const CustomerHome = () => {
 const styles = StyleSheet.create({
   floatingChatButton: {
     position: "absolute",
-    bottom: Platform.OS === "ios" ? 140 : 90,
-    right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: Colors.primary,
+    bottom: Platform.OS === "ios" ? 420 : 30,
+    right: 16,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#FFC107",
     justifyContent: "center",
     alignItems: "center",
     elevation: 8,
@@ -164,7 +168,7 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.3,
     shadowRadius: 4.65,
-    zIndex: 999,
+    zIndex: 10,
   },
   unreadBadge: {
     position: "absolute",

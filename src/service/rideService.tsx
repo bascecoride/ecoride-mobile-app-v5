@@ -7,12 +7,23 @@ interface coords {
   address: string;
   latitude: number;
   longitude: number;
+  landmark?: string; // Landmark description to help driver find passenger
 }
 
+// Vehicle passenger limits
+export const VEHICLE_PASSENGER_LIMITS = {
+  "Single Motorcycle": 1,
+  "Tricycle": 3,
+  "Cab": 4,
+} as const;
+
+export type VehicleType = keyof typeof VEHICLE_PASSENGER_LIMITS;
+
 export const createRide = async (payload: {
-  vehicle: "Single Motorcycle" | "Tricycle" | "Cab";
+  vehicle: VehicleType;
   pickup: coords;
   drop: coords;
+  passengerCount?: number; // Number of passengers joining the ride
 }) => {
   try {
     console.log("Sending ride creation request with payload:", JSON.stringify(payload, null, 2));
@@ -185,13 +196,27 @@ export const getMyRatings = async () => {
   }
 };
 
-export const cancelRideOffer = async (rideId: string) => {
+export const cancelRideOffer = async (rideId: string, reason?: string) => {
   try {
-    const res = await api.delete(`/ride/cancel/${rideId}`);
+    const res = await api.delete(`/ride/cancel/${rideId}`, {
+      data: { reason }
+    });
     return true;
   } catch (error: any) {
     Alert.alert("Error", "Failed to cancel ride offer");
     console.log("Error: Cancel Ride Offer ", error);
     return false;
+  }
+};
+
+// Update payment method for a completed ride
+export const updatePaymentMethod = async (rideId: string, paymentMethod: "CASH" | "GCASH") => {
+  try {
+    const res = await api.patch(`/ride/payment/${rideId}`, { paymentMethod });
+    return { success: true, data: res.data };
+  } catch (error: any) {
+    console.log("Error: Update Payment Method ", error);
+    Alert.alert("Error", "Failed to update payment method");
+    return { success: false, error };
   }
 };

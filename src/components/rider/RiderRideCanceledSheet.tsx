@@ -24,16 +24,21 @@ interface RideItem {
 }
 
 const RiderRideCanceledSheet: FC<{ item: RideItem }> = ({ item }) => {
-  const [countdown, setCountdown] = useState(5);
+  const [countdown, setCountdown] = useState(4);
   const [isAutoNavigating, setIsAutoNavigating] = useState(true);
 
+  console.log('🎬 RiderRideCanceledSheet rendered - countdown:', countdown, 'isAutoNavigating:', isAutoNavigating);
+
   useEffect(() => {
+    console.log('🔄 RiderRideCanceledSheet - Countdown:', countdown, 'isAutoNavigating:', isAutoNavigating);
     if (isAutoNavigating && countdown > 0) {
       const timer = setTimeout(() => {
+        console.log('⏱️ Countdown decreasing from', countdown, 'to', countdown - 1);
         setCountdown(countdown - 1);
       }, 1000);
       return () => clearTimeout(timer);
     } else if (countdown === 0 && isAutoNavigating) {
+      console.log('🏠 Countdown reached 0, navigating to home...');
       resetAndNavigate("/rider/home");
     }
   }, [countdown, isAutoNavigating]);
@@ -47,8 +52,11 @@ const RiderRideCanceledSheet: FC<{ item: RideItem }> = ({ item }) => {
     setIsAutoNavigating(false);
   };
 
+  // Log countdown UI visibility
+  console.log('🎨 Countdown UI should show:', isAutoNavigating && countdown > 0);
+
   return (
-    <View style={{ padding: 20 }}>
+    <View style={{ padding: 20, paddingBottom: 20 }}>
       {/* Canceled Header */}
       <View style={{ 
         backgroundColor: '#ff4444', 
@@ -171,10 +179,10 @@ const RiderRideCanceledSheet: FC<{ item: RideItem }> = ({ item }) => {
           <View style={[commonStyles.flexRowBetween, { alignItems: 'center' }]}>
             <View style={{ flex: 1 }}>
               <CustomText fontFamily="SemiBold" fontSize={12} style={{ color: '#1976D2' }}>
-                Returning to home in {countdown}s
+                Redirecting you back to the home screen in {countdown} second{countdown !== 1 ? 's' : ''}
               </CustomText>
               <CustomText fontSize={10} style={{ color: '#666', marginTop: 2 }}>
-                You'll be taken back to the home screen automatically
+                Please wait...
               </CustomText>
             </View>
             <TouchableOpacity

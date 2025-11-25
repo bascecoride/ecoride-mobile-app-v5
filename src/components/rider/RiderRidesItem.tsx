@@ -16,9 +16,10 @@ interface RideItem {
   _id: string;
   vehicle?: VehicleType;
   pickup: { address: string; latitude: number; longitude: number };
-  drop?: { address: string; latitude: number; longitude: number };
+  drop?: { address: string; latitude: number; longitude: number; landmark?: string };
   fare?: number;
   distance: number;
+  passengerCount?: number;
 }
 
 const RiderRidesItem: FC<{ item: RideItem; removeIt: () => void }> = ({
@@ -137,6 +138,30 @@ const RiderRidesItem: FC<{ item: RideItem; removeIt: () => void }> = ({
             >
               {item?.drop?.address}
             </CustomText>
+            {/* Landmark description */}
+            {item?.drop?.landmark && (
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginTop: 4,
+                backgroundColor: '#FFF9E6',
+                paddingHorizontal: 8,
+                paddingVertical: 4,
+                borderRadius: 6,
+                borderWidth: 1,
+                borderColor: '#FFD700',
+              }}>
+                <Ionicons name="location" size={12} color="#FF6B6B" />
+                <CustomText
+                  numberOfLines={2}
+                  fontSize={9}
+                  fontFamily="Medium"
+                  style={{ marginLeft: 4, color: '#666', flex: 1 }}
+                >
+                  📍 {item?.drop?.landmark}
+                </CustomText>
+              </View>
+            )}
           </View>
         </View>
       </View>
@@ -175,6 +200,23 @@ const RiderRidesItem: FC<{ item: RideItem; removeIt: () => void }> = ({
           <CustomText fontSize={11} fontFamily="SemiBold">
             {item?.distance.toFixed(2)} Km
           </CustomText>
+        </View>
+
+        {/* Passenger Count Display */}
+        <View style={orderStyles.borderLine}>
+          <CustomText
+            fontSize={9}
+            fontFamily="Medium"
+            style={orderStyles.label}
+          >
+            Passengers
+          </CustomText>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="people" size={14} color="#4CAF50" />
+            <CustomText fontSize={11} fontFamily="SemiBold" style={{ marginLeft: 4 }}>
+              {item?.passengerCount || 1}
+            </CustomText>
+          </View>
         </View>
       </View>
 

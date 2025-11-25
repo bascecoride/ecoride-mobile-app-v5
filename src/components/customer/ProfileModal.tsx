@@ -394,8 +394,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ visible, onClose }) => {
                   {profileData.role === 'rider' && renderDocumentItem("Certificate of Registration", profileData.cor, "document-text-outline")}
                 </View>
 
-                {/* Account Status Section */}
-                {(profileData.disapprovalReason || profileData.penaltyComment) && (
+                {/* Account Status Section - Only show when disapproved */}
+                {profileData.status?.toLowerCase() === 'disapproved' && (profileData.disapprovalReason || profileData.penaltyComment) && (
                   <View style={styles.section}>
                     <View style={styles.sectionHeader}>
                       <Ionicons name="information-circle-outline" size={RFValue(20)} color={Colors.primary} />

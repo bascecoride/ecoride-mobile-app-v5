@@ -152,7 +152,8 @@ export const login = async (
           success: false,
           rejectionInfo: {
             reason: error.response.data.disapprovalReason || error.response.data.message,
-            deadline: null
+            deadline: null,
+            status: 'disapproved'
           }
         };
       }
@@ -163,7 +164,8 @@ export const login = async (
           success: false,
           rejectionInfo: {
             reason: error.response.data.message,
-            deadline: null
+            deadline: null,
+            status: 'pending'
           }
         };
       }
@@ -196,11 +198,14 @@ export const register = async (
     sex?: string;
     userRole?: string;
     vehicleType?: string;
+    plateNumber?: string;
     photo?: string;
     schoolIdDocument?: string;
     staffFacultyIdDocument?: string;
     cor?: string;
     driverLicense?: string;
+    orCr?: string;
+    agreedToTerms?: boolean;
   },
   updateAccessToken: () => Promise<void>
 ) => {
@@ -303,6 +308,8 @@ export const updateUserProfile = async (profileData: {
   licenseId?: string;
   email?: string;
   sex?: string;
+  vehicleType?: string;
+  plateNumber?: string;
 }) => {
   const { setUser } = useUserStore.getState();
   

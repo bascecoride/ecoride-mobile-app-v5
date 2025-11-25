@@ -17,13 +17,13 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.fankarwanta.rideapp",
       "config": {
-        "googleMapsApiKey": "AIzaSyAJEayMulsZ_LDps2fKN22Q-ED2f3BwGIw"
+        "googleMapsApiKey": "AIzaSyAO0FLe4ZAqH36QIrkbhsb2qpHdS-tZVlc"
       }
     },
     "android": {
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyAJEayMulsZ_LDps2fKN22Q-ED2f3BwGIw"
+          "apiKey": "AIzaSyAO0FLe4ZAqH36QIrkbhsb2qpHdS-tZVlc"
         }
       },
       "package": "com.fankarwanta.rideapp",
@@ -55,7 +55,7 @@
       [
         "./plugins/react-native-maps.js",
         {
-          "apiKey": "AIzaSyAJEayMulsZ_LDps2fKN22Q-ED2f3BwGIw"
+          "apiKey": "AIzaSyAO0FLe4ZAqH36QIrkbhsb2qpHdS-tZVlc"
         }
       ]
     ],

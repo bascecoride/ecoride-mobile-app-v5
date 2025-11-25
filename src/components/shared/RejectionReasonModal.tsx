@@ -14,6 +14,7 @@ interface RejectionReasonModalProps {
   reason: string;
   deadline: string | null;
   onClose: () => void;
+  status?: 'pending' | 'disapproved';
 }
 
 const RejectionReasonModal: React.FC<RejectionReasonModalProps> = ({
@@ -21,6 +22,7 @@ const RejectionReasonModal: React.FC<RejectionReasonModalProps> = ({
   reason,
   deadline,
   onClose,
+  status = 'disapproved',
 }) => {
   const formatDeadline = (deadlineStr: string | null) => {
     if (!deadlineStr) return null;
@@ -59,10 +61,14 @@ const RejectionReasonModal: React.FC<RejectionReasonModalProps> = ({
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.iconContainer}>
-              <Ionicons name="close-circle" size={50} color="#ff6b6b" />
+              <Ionicons 
+                name={status === 'pending' ? "time-outline" : "close-circle"} 
+                size={50} 
+                color={status === 'pending' ? "#FFA726" : "#ff6b6b"} 
+              />
             </View>
             <CustomText fontFamily="Bold" fontSize={20} style={styles.title}>
-              Account Disapproved
+              {status === 'pending' ? 'Account Pending' : 'Account Disapproved'}
             </CustomText>
           </View>
 
@@ -70,10 +76,10 @@ const RejectionReasonModal: React.FC<RejectionReasonModalProps> = ({
           <ScrollView style={styles.content}>
             <View style={styles.section}>
               <CustomText fontFamily="Medium" fontSize={14} style={styles.label}>
-                Reason for Disapproval:
+                {status === 'pending' ? 'Reason:' : 'Reason for Disapproval:'}
               </CustomText>
-              <View style={styles.reasonBox}>
-                <CustomText fontSize={14} style={styles.reasonText}>
+              <View style={[styles.reasonBox, status === 'pending' && styles.pendingReasonBox]}>
+                <CustomText fontSize={14} style={[styles.reasonText, status === 'pending' && styles.pendingReasonText]}>
                   {reason || 'No reason provided'}
                 </CustomText>
               </View>
@@ -197,6 +203,13 @@ const styles = StyleSheet.create({
   reasonText: {
     color: '#c62828',
     lineHeight: 20,
+  },
+  pendingReasonBox: {
+    backgroundColor: '#fff3e0',
+    borderLeftColor: '#FFA726',
+  },
+  pendingReasonText: {
+    color: '#e65100',
   },
   deadlineBox: {
     flexDirection: 'row',

@@ -256,39 +256,39 @@ const MapPickerModal: FC<MapPickerModalProps> = ({
         setAddress(address || "Current location");
         } catch (locationError) {
           console.log("Failed to get current location, using fallback:", locationError);
-          // Use fallback location (Manila, Philippines)
+          // Use fallback location (San Ildefonso, Bulacan)
           const fallbackRegion = {
-            latitude: 14.5995,
-            longitude: 120.9842,
+            latitude: 14.9500,
+            longitude: 120.9500,
             latitudeDelta: 0.01,
             longitudeDelta: 0.01,
           };
           setRegion(fallbackRegion);
-          setAddress("Manila, Philippines (Fallback)");
+          setAddress("San Ildefonso, Bulacan (Fallback)");
         }
       } else {
         console.log("Location permission denied, using fallback");
         // Use fallback location
         const fallbackRegion = {
-          latitude: 14.5995,
-          longitude: 120.9842,
+          latitude: 14.9500,
+          longitude: 120.9500,
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
         };
         setRegion(fallbackRegion);
-        setAddress("Manila, Philippines (Fallback)");
+        setAddress("San Ildefonso, Bulacan (Fallback)");
       }
     } catch (error) {
       console.log("Error getting location, using fallback:", error);
       // Use fallback location
       const fallbackRegion = {
-        latitude: 14.5995,
-        longitude: 120.9842,
+        latitude: 14.9500,
+        longitude: 120.9500,
         latitudeDelta: 0.01,
         longitudeDelta: 0.01,
       };
       setRegion(fallbackRegion);
-      setAddress("Manila, Philippines (Fallback)");
+      setAddress("San Ildefonso, Bulacan (Fallback)");
     } finally {
       setIsLoadingAddress(false);
     }

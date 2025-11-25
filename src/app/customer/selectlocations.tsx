@@ -5,6 +5,8 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { useUserStore } from "@/store/userStore";
@@ -21,11 +23,13 @@ import {
   calculateDistance,
   getLatLong,
   getPlacesSuggestions,
+  reverseGeocode,
 } from "@/utils/mapUtils";
 import { PIN_LOCATIONS } from "@/utils/LocationConfig";
 import { locationStyles } from "@/styles/locationStyles";
 import LocationItem from "@/components/customer/LocationItem";
 import MapPickerModal from "@/components/customer/MapPickerModal";
+import * as Location from "expo-location";
 
 export default function LocationSelection() {
   const { location, setLocation } = useUserStore();
@@ -38,6 +42,7 @@ export default function LocationSelection() {
   const [focusedInput, setFocusedInput] = useState("drop");
   const [modalTitle, setModalTitle] = useState("drop");
   const [isMapModalVisible, setMapModalVisible] = useState(false);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
 
   const fetchLocation = async (query: string) => {
     if (query?.length > 4) {
@@ -83,6 +88,67 @@ export default function LocationSelection() {
       setLocation(locationData);
       setPickupCoords(locationData);
       setPickup(pinLocation.address);
+    }
+  };
+
+  const handleGetCurrentLocation = async () => {
+    try {
+      setIsGettingLocation(true);
+      
+      // Request location permissions
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Denied",
+          "Location permission is required to get your current location. Please enable it in your device settings."
+        );
+        setIsGettingLocation(false);
+        return;
+      }
+
+      // Check if location services are enabled
+      const isLocationEnabled = await Location.hasServicesEnabledAsync();
+      if (!isLocationEnabled) {
+        Alert.alert(
+          "Location Services Disabled",
+          "Please enable location services in your device settings to use this feature."
+        );
+        setIsGettingLocation(false);
+        return;
+      }
+
+      // Get current position
+      const currentLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      const { latitude, longitude } = currentLocation.coords;
+
+      // Reverse geocode to get address
+      const address = await reverseGeocode(latitude, longitude);
+
+      const locationData = {
+        latitude,
+        longitude,
+        address: address || "Current Location",
+      };
+
+      // Set as pickup location
+      setLocation(locationData);
+      setPickupCoords(locationData);
+      setPickup(address || "Current Location");
+
+      console.log("✅ Current location set:", locationData);
+      
+    } catch (error) {
+      console.log("Error getting current location:", error);
+      Alert.alert(
+        "Error",
+        "Failed to get your current location. Please try again or select from map."
+      );
+    } finally {
+      setIsGettingLocation(false);
     }
   };
 
@@ -177,6 +243,8 @@ export default function LocationSelection() {
             fetchLocation(text);
           }}
           onFocus={() => setFocusedInput("pickup")}
+          onGetCurrentLocation={handleGetCurrentLocation}
+          isGettingLocation={isGettingLocation}
         />
 
         <LocationInput

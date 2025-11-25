@@ -1,4 +1,4 @@
-import { View, Text, Image, TouchableOpacity } from "react-native";
+import { View, Text, Image, TouchableOpacity, BackHandler, Alert } from "react-native";
 import React, { FC, useState, useEffect } from "react";
 import { rideStyles } from "@/styles/rideStyles";
 import { commonStyles } from "@/styles/commonStyles";
@@ -7,6 +7,8 @@ import { vehicleIcons } from "@/utils/mapUtils";
 import { MaterialCommunityIcons, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { resetAndNavigate } from "@/utils/Helpers";
 import AnonymousRatingModal from "./AnonymousRatingModal";
+import PaymentMethodModal from "./PaymentMethodModal";
+import { router } from "expo-router";
 
 type VehicleType = "Single Motorcycle" | "Tricycle" | "Cab";
 
@@ -19,6 +21,7 @@ interface RideItem {
   otp?: string;
   rider: any;
   status: string;
+  paymentMethod?: "CASH" | "GCASH" | null;
 }
 
 interface RideCompletedSheetProps {
@@ -27,17 +30,34 @@ interface RideCompletedSheetProps {
 }
 
 const RideCompletedSheet: FC<RideCompletedSheetProps> = ({ item, onNavigateHome }) => {
-  const [countdown, setCountdown] = useState(10);
-  const [isAutoNavigating, setIsAutoNavigating] = useState(true);
+  const [countdown, setCountdown] = useState(4);
+  const [isAutoNavigating, setIsAutoNavigating] = useState(false); // Disabled auto-navigation - wait for payment selection
   const [ratingModalVisible, setRatingModalVisible] = useState(false);
+  const [paymentModalVisible, setPaymentModalVisible] = useState(true); // Show payment modal immediately
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<"CASH" | "GCASH" | null>(item.paymentMethod || null);
+
+  console.log('🎬 RideCompletedSheet rendered - countdown:', countdown, 'isAutoNavigating:', isAutoNavigating);
+
+  // Disable hardware back button
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      console.log('🚫 Hardware back button disabled on completed ride screen');
+      return true; // Prevent default back behavior
+    });
+
+    return () => backHandler.remove();
+  }, []);
 
   useEffect(() => {
+    console.log('🔄 RideCompletedSheet - Countdown:', countdown, 'isAutoNavigating:', isAutoNavigating);
     if (isAutoNavigating && countdown > 0) {
       const timer = setTimeout(() => {
+        console.log('⏱️ Countdown decreasing from', countdown, 'to', countdown - 1);
         setCountdown(countdown - 1);
       }, 1000);
       return () => clearTimeout(timer);
     } else if (countdown === 0 && isAutoNavigating) {
+      console.log('🏠 Countdown reached 0, navigating to home...');
       handleCleanupAndNavigate();
     }
   }, [countdown, isAutoNavigating]);
@@ -62,8 +82,46 @@ const RideCompletedSheet: FC<RideCompletedSheetProps> = ({ item, onNavigateHome 
     setIsAutoNavigating(false);
   };
 
+  // Handle payment method selection
+  const handlePaymentSelected = (method: "CASH" | "GCASH") => {
+    console.log('💳 Payment method selected:', method);
+    setSelectedPaymentMethod(method);
+    setPaymentModalVisible(false);
+    
+    // Show alert and redirect to ride history for rating
+    Alert.alert(
+      "Payment Recorded! 💳",
+      `Payment method: ${method}\n\nYou will be redirected to Ride History.\nPlease don't forget to rate your ride!`,
+      [
+        {
+          text: "Go to Ride History",
+          onPress: () => {
+            console.log('🚗 Navigating to ride history for rating...');
+            // Navigate to ride history with flag to show home button instead of back
+            router.push({
+              pathname: "/customer/ridehistory",
+              params: { fromRideCompletion: "true" }
+            });
+          },
+        },
+      ],
+      { cancelable: false }
+    );
+  };
+
+  // If payment method already selected (from previous session), skip modal
+  useEffect(() => {
+    if (item.paymentMethod) {
+      setPaymentModalVisible(false);
+      setSelectedPaymentMethod(item.paymentMethod);
+    }
+  }, [item.paymentMethod]);
+
+  // Log countdown UI visibility
+  console.log('🎨 Countdown UI should show:', isAutoNavigating && countdown > 0);
+
   return (
-    <View>
+    <View style={{ paddingBottom: 20 }}>
       {/* Back Button */}
       <TouchableOpacity
         style={{
@@ -184,9 +242,25 @@ const RideCompletedSheet: FC<RideCompletedSheetProps> = ({ item, onNavigateHome 
             </CustomText>
           </View>
 
-          <CustomText fontSize={11} style={{ color: '#666' }}>
-            Payment via cash - Paid to rider
-          </CustomText>
+          {selectedPaymentMethod ? (
+            <View style={[commonStyles.flexRow, { alignItems: 'center' }]}>
+              <Image
+                source={selectedPaymentMethod === "CASH" 
+                  ? require("@/assets/icons/rupee.png")
+                  : require("@/assets/images/gcash-logo.png")
+                }
+                style={{ width: 20, height: 20, marginRight: 8 }}
+                resizeMode="contain"
+              />
+              <CustomText fontSize={11} style={{ color: '#666' }}>
+                Payment via {selectedPaymentMethod === "CASH" ? "Cash" : "GCash"} - Paid to rider
+              </CustomText>
+            </View>
+          ) : (
+            <CustomText fontSize={11} style={{ color: '#666' }}>
+              Please select payment method
+            </CustomText>
+          )}
         </View>
 
         {/* Rating Section */}
@@ -228,10 +302,10 @@ const RideCompletedSheet: FC<RideCompletedSheetProps> = ({ item, onNavigateHome 
           <View style={[commonStyles.flexRowBetween, { alignItems: 'center' }]}>
             <View style={{ flex: 1 }}>
               <CustomText fontFamily="SemiBold" fontSize={12} style={{ color: '#1976D2' }}>
-                Auto-redirecting to home in {countdown}s
+                Redirecting you back to the home screen in {countdown} second{countdown !== 1 ? 's' : ''}
               </CustomText>
               <CustomText fontSize={10} style={{ color: '#666', marginTop: 2 }}>
-                You'll be taken back to the home screen automatically
+                Please wait...
               </CustomText>
             </View>
             <TouchableOpacity
@@ -269,6 +343,14 @@ const RideCompletedSheet: FC<RideCompletedSheetProps> = ({ item, onNavigateHome 
         onClose={() => setRatingModalVisible(false)}
         rideId={item._id}
         riderName={item?.rider?.name}
+      />
+
+      {/* Payment Method Modal */}
+      <PaymentMethodModal
+        visible={paymentModalVisible}
+        rideId={item._id}
+        fare={item.fare || 0}
+        onPaymentSelected={handlePaymentSelected}
       />
     </View>
   );

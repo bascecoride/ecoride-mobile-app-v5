@@ -7,6 +7,7 @@ import {
   Alert,
   StyleSheet,
   Image,
+  Text,
 } from "react-native";
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -19,8 +20,9 @@ import { useWS } from "@/service/WSProvider";
 import CustomButton from "@/components/shared/CustomButton";
 import { login, register } from "@/service/authService";
 import { BASE_URL } from "@/service/config";
-import { Link } from "expo-router";
+import { Link, router } from "expo-router";
 import RejectionReasonModal from "@/components/shared/RejectionReasonModal";
+import TermsModal from "@/components/shared/TermsModal";
 import PenaltyModal from "@/components/shared/PenaltyModal";
 
 export default function Auth() {
@@ -53,9 +55,12 @@ export default function Auth() {
   const [showRejectionModal, setShowRejectionModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [rejectionDeadline, setRejectionDeadline] = useState<string | null>(null);
+  const [rejectionStatus, setRejectionStatus] = useState<'pending' | 'disapproved'>('disapproved');
   const [showPenaltyModal, setShowPenaltyModal] = useState(false);
   const [penaltyComment, setPenaltyComment] = useState("");
   const [penaltyLiftDate, setPenaltyLiftDate] = useState<string | null>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -85,6 +90,7 @@ export default function Auth() {
       if (!result.success && result.rejectionInfo) {
         setRejectionReason(result.rejectionInfo.reason);
         setRejectionDeadline(result.rejectionInfo.deadline);
+        setRejectionStatus((result.rejectionInfo.status as 'pending' | 'disapproved') || 'disapproved');
         setShowRejectionModal(true);
       }
     } catch (error) {
@@ -274,6 +280,11 @@ export default function Auth() {
     if (!validateDocuments()) {
       return;
     }
+
+    if (!agreedToTerms) {
+      Alert.alert('Terms Required', 'You must agree to the Terms and Conditions to register');
+      return;
+    }
     
     setLoading(true);
     try {
@@ -295,7 +306,8 @@ export default function Auth() {
         photo: documentUrls.photo,
         schoolIdDocument: documentUrls.schoolIdDocument,
         staffFacultyIdDocument: documentUrls.staffFacultyIdDocument,
-        cor: documentUrls.cor
+        cor: documentUrls.cor,
+        agreedToTerms: true
       }, updateAccessToken);
     } catch (error: any) {
       console.error("Registration error:", error);
@@ -1149,16 +1161,19 @@ export default function Auth() {
         ]}
       >
         <View style={commonStyles.flexRowBetween}>
-          <Image
-            source={require("@/assets/images/ecoride_logo1.png")}
-            style={authStyles.logo}
-          />
+          <TouchableOpacity onPress={() => router.replace("/role")}>
+            <Image
+              source={require("@/assets/images/ecoride_logo1.png")}
+              style={authStyles.logo}
+            />
+          </TouchableOpacity>
+          {/* Help Button 
           <TouchableOpacity style={authStyles.flexRowGap}>
             <MaterialIcons name="help" size={18} color="grey" />
             <CustomText fontFamily="Medium" variant="h7">
               Help
             </CustomText>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
 
         {isForgotPassword ? (
@@ -1179,6 +1194,7 @@ export default function Auth() {
             alignItems: 'flex-start'
           }
         ]}>
+          {/* By continuing, you agree to the terms and privacy policy of Ecoride App 
           <CustomText
             variant="h8"
             fontFamily="Regular"
@@ -1188,8 +1204,8 @@ export default function Auth() {
             ]}
           >
             By continuing, you agree to the terms and privacy policy of Ecoride App
-          </CustomText>
-
+          </CustomText> */}
+          {/* 
           {!isForgotPassword && !isLogin && (
             <View style={styles.registerLinkContainer}>
               <CustomText fontFamily="Regular" variant="h7" style={styles.linkPromptText}>
@@ -1206,6 +1222,40 @@ export default function Auth() {
                 >
                   Login here
                 </CustomText>
+              </TouchableOpacity>
+            </View>
+          )}
+          */}
+
+          {/* Terms and Conditions Checkbox - Only show during registration */}
+          {!isForgotPassword && !isLogin && (
+            <View style={styles.termsContainer}>
+              <TouchableOpacity 
+                style={styles.checkboxContainer}
+                onPress={() => setAgreedToTerms(!agreedToTerms)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}>
+                  {agreedToTerms && (
+                    <MaterialIcons name="check" size={16} color="#fff" />
+                  )}
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <Text style={styles.termsText}>
+                    I agree to the{" "}
+                  </Text>
+                  <TouchableOpacity 
+                    onPress={() => setShowTermsModal(true)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.termsLink}>
+                      Terms and Conditions
+                    </Text>
+                  </TouchableOpacity>
+                  <Text style={styles.termsText}>
+                    {" "}of EcoRide-BASC
+                  </Text>
+                </View>
               </TouchableOpacity>
             </View>
           )}
@@ -1260,6 +1310,7 @@ export default function Auth() {
         visible={showRejectionModal}
         reason={rejectionReason}
         deadline={rejectionDeadline}
+        status={rejectionStatus}
         onClose={() => setShowRejectionModal(false)}
       />
       
@@ -1269,6 +1320,12 @@ export default function Auth() {
         comment={penaltyComment}
         liftDate={penaltyLiftDate}
         onClose={() => setShowPenaltyModal(false)}
+      />
+
+      {/* Terms and Conditions Modal */}
+      <TermsModal
+        visible={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
       />
     </SafeAreaView>
   );
@@ -1421,5 +1478,40 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     color: '#6c757d',
     fontSize: 14,
+  },
+  termsContainer: {
+    marginTop: 15,
+    marginBottom: 15,
+    width: '100%',
+    alignItems: 'center',
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: '#4CAF50',
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    marginLeft: 25,
+    marginBottom: 15,
+  },
+  checkboxChecked: {
+    backgroundColor: '#4CAF50',
+  },
+  termsLink: {
+    color: '#4CAF50',
+    textDecorationLine: 'underline',
+    fontSize: 13,
+  },
+  termsText: {
+    color: '#666',
+    fontSize: 13,
   },
 });

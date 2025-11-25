@@ -7,6 +7,7 @@ import {
   Alert,
   TextInput,
   StyleSheet,
+  Text,
 } from "react-native";
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -19,9 +20,10 @@ import { useWS } from "@/service/WSProvider";
 import CustomButton from "@/components/shared/CustomButton";
 import { login, register } from "@/service/authService";
 import { BASE_URL } from "@/service/config";
-import { Link } from "expo-router";
+import { Link, router } from "expo-router";
 import RejectionReasonModal from "@/components/shared/RejectionReasonModal";
 import PenaltyModal from "@/components/shared/PenaltyModal";
+import TermsModal from "@/components/shared/TermsModal";
 
 export default function Auth() {
   const { updateAccessToken } = useWS();
@@ -46,18 +48,23 @@ export default function Auth() {
   const [sex, setSex] = useState("");
   const [userRole, setUserRole] = useState("");
   const [vehicleType, setVehicleType] = useState("");
+  const [plateNumber, setPlateNumber] = useState("");
   const [photo, setPhoto] = useState<any>(null);
   const [schoolIdDocument, setSchoolIdDocument] = useState<any>(null);
   const [staffFacultyIdDocument, setStaffFacultyIdDocument] = useState<any>(null);
   const [cor, setCor] = useState<any>(null);
   const [driverLicense, setDriverLicense] = useState<any>(null);
+  const [orCr, setOrCr] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [showRejectionModal, setShowRejectionModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [rejectionDeadline, setRejectionDeadline] = useState<string | null>(null);
+  const [rejectionStatus, setRejectionStatus] = useState<'pending' | 'disapproved'>('disapproved');
   const [showPenaltyModal, setShowPenaltyModal] = useState(false);
   const [penaltyComment, setPenaltyComment] = useState("");
   const [penaltyLiftDate, setPenaltyLiftDate] = useState<string | null>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   // Document picker functions
   const pickImage = async (setter: any) => {
@@ -148,6 +155,16 @@ export default function Auth() {
           name: driverLicense.name || 'driver_license.jpg',
         } as any);
       }
+      
+      // OR/CR is required for all drivers to verify vehicle ownership
+      if (orCr) {
+        console.log('Adding OR/CR document to upload');
+        formData.append('orCr', {
+          uri: orCr.uri,
+          type: orCr.mimeType || 'image/jpeg',
+          name: orCr.name || 'or_cr.jpg',
+        } as any);
+      }
 
       console.log('Sending document upload request to server...');
       const response = await fetch(`${BASE_URL}/api/auth/upload-documents`, {
@@ -222,6 +239,7 @@ export default function Auth() {
       if (!result.success && result.rejectionInfo) {
         setRejectionReason(result.rejectionInfo.reason);
         setRejectionDeadline(result.rejectionInfo.deadline);
+        setRejectionStatus((result.rejectionInfo.status as 'pending' | 'disapproved') || 'disapproved');
         setShowRejectionModal(true);
       }
     } catch (error) {
@@ -263,6 +281,12 @@ export default function Auth() {
       return;
     }
 
+    // Validate plate number
+    if (vehicleType && (!plateNumber || plateNumber.trim().length < 3)) {
+      Alert.alert("Invalid Plate Number", "Plate number is required and must be at least 3 characters");
+      return;
+    }
+
     // Validate required documents based on role
     if (userRole) {
       if (!photo) {
@@ -272,6 +296,11 @@ export default function Auth() {
       
       if (!driverLicense) {
         Alert.alert('Document Required', 'Driver license is required for all drivers');
+        return;
+      }
+      
+      if (!orCr) {
+        Alert.alert('Document Required', 'OR/CR (Official Receipt/Certificate of Registration) is required to verify vehicle ownership');
         return;
       }
       
@@ -286,6 +315,11 @@ export default function Auth() {
           return;
         }
       }
+    }
+
+    if (!agreedToTerms) {
+      Alert.alert('Terms Required', 'You must agree to the Terms and Conditions to register');
+      return;
     }
     
     setLoading(true);
@@ -311,11 +345,14 @@ export default function Auth() {
         sex,
         userRole,
         vehicleType,
+        plateNumber,
         photo: documentUrls.photo,
         schoolIdDocument: documentUrls.schoolIdDocument,
         staffFacultyIdDocument: documentUrls.staffFacultyIdDocument,
         cor: documentUrls.cor,
-        driverLicense: documentUrls.driverLicense
+        driverLicense: documentUrls.driverLicense,
+        orCr: documentUrls.orCr,
+        agreedToTerms: true
       }, updateAccessToken);
     } catch (error: any) {
       console.error("Registration error:", error);
@@ -674,6 +711,23 @@ export default function Auth() {
         </View>
       </View>
 
+      {/* Plate Number Input */}
+      {vehicleType && (
+        <View style={styles.inputContainer}>
+          <CustomText fontFamily="Medium">Plate Number *</CustomText>
+          <CustomText fontSize={11} style={{ color: '#666', marginTop: 4, marginBottom: 8 }}>
+            Enter your vehicle's plate number (e.g., ABC 1234)
+          </CustomText>
+          <TextInput
+            style={styles.input}
+            value={plateNumber}
+            onChangeText={(text) => setPlateNumber(text.toUpperCase())}
+            autoCapitalize="characters"
+            placeholder="Enter plate number"
+          />
+        </View>
+      )}
+
       {/* Role Selection */}
       <View style={styles.inputContainer}>
         <CustomText fontFamily="Medium">Role</CustomText>
@@ -780,6 +834,23 @@ export default function Auth() {
               <MaterialIcons name="drive-eta" size={20} color="#666" />
               <CustomText fontFamily="Regular" style={styles.documentButtonText}>
                 {driverLicense ? driverLicense.name || 'Driver License Selected' : 'Upload Driver License'}
+              </CustomText>
+            </TouchableOpacity>
+          </View>
+
+          {/* OR/CR - Required for all drivers to verify vehicle ownership */}
+          <View style={styles.inputContainer}>
+            <CustomText fontFamily="Medium">OR/CR (Official Receipt/Certificate of Registration) *</CustomText>
+            <CustomText fontSize={11} style={{ color: '#666', marginTop: 4, marginBottom: 8 }}>
+              Upload your vehicle's OR/CR to verify ownership
+            </CustomText>
+            <TouchableOpacity 
+              style={styles.documentButton}
+              onPress={() => pickDocument(setOrCr)}
+            >
+              <MaterialIcons name="description" size={20} color="#666" />
+              <CustomText fontFamily="Regular" style={styles.documentButtonText}>
+                {orCr ? orCr.name || 'OR/CR Selected' : 'Upload OR/CR'}
               </CustomText>
             </TouchableOpacity>
           </View>
@@ -1207,16 +1278,19 @@ export default function Auth() {
         ]}
       >
         <View style={commonStyles.flexRowBetween}>
-          <Image
-            source={require("@/assets/images/ecoride_logo1.png")}
-            style={authStyles.logo}
-          />
+          <TouchableOpacity onPress={() => router.replace("/role")}>
+            <Image
+              source={require("@/assets/images/ecoride_logo1.png")}
+              style={authStyles.logo}
+            />
+          </TouchableOpacity>
+          {/* Help Button 
           <TouchableOpacity style={authStyles.flexRowGap}>
             <MaterialIcons name="help" size={18} color="grey" />
             <CustomText fontFamily="Medium" variant="h7">
               Help
             </CustomText>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
 
         {isForgotPassword ? (
@@ -1237,6 +1311,7 @@ export default function Auth() {
             alignItems: 'flex-start'
           }
         ]}>
+          {/* By continuing, you agree to the terms and privacy policy of Ecoride App 
           <CustomText
             variant="h8"
             fontFamily="Regular"
@@ -1246,8 +1321,8 @@ export default function Auth() {
             ]}
           >
             By continuing, you agree to the terms and privacy policy of Ecoride App
-          </CustomText>
-
+          </CustomText> */}
+        {/*
           {!isForgotPassword && !isLogin && (
             <View style={styles.registerLinkContainer}>
               <CustomText fontFamily="Regular" variant="h7" style={styles.linkPromptText}>
@@ -1264,6 +1339,40 @@ export default function Auth() {
                 >
                   Login here
                 </CustomText>
+              </TouchableOpacity>
+            </View>
+          )}
+          */}
+
+          {/* Terms and Conditions Checkbox - Only show during registration */}
+          {!isForgotPassword && !isLogin && (
+            <View style={styles.termsContainer}>
+              <TouchableOpacity 
+                style={styles.checkboxContainer}
+                onPress={() => setAgreedToTerms(!agreedToTerms)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}>
+                  {agreedToTerms && (
+                    <MaterialIcons name="check" size={16} color="#fff" />
+                  )}
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <Text style={styles.termsText}>
+                    I agree to the{" "}
+                  </Text>
+                  <TouchableOpacity 
+                    onPress={() => setShowTermsModal(true)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.termsLink}>
+                      Terms and Conditions
+                    </Text>
+                  </TouchableOpacity>
+                  <Text style={styles.termsText}>
+                    {" "}of EcoRide-BASC
+                  </Text>
+                </View>
               </TouchableOpacity>
             </View>
           )}
@@ -1318,6 +1427,7 @@ export default function Auth() {
         visible={showRejectionModal}
         reason={rejectionReason}
         deadline={rejectionDeadline}
+        status={rejectionStatus}
         onClose={() => setShowRejectionModal(false)}
       />
       
@@ -1327,6 +1437,12 @@ export default function Auth() {
         comment={penaltyComment}
         liftDate={penaltyLiftDate}
         onClose={() => setShowPenaltyModal(false)}
+      />
+
+      {/* Terms and Conditions Modal */}
+      <TermsModal
+        visible={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
       />
     </SafeAreaView>
   );
@@ -1502,5 +1618,40 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     color: '#495057',
     fontSize: 14,
+  },
+  termsContainer: {
+    marginTop: 15,
+    marginBottom: 15,
+    width: '100%',
+    alignItems: 'center',
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: '#4CAF50',
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    marginLeft: 25,
+    marginBottom: 15,
+  },
+  checkboxChecked: {
+    backgroundColor: '#4CAF50',
+  },
+  termsLink: {
+    color: '#4CAF50',
+    textDecorationLine: 'underline',
+    fontSize: 13,
+  },
+  termsText: {
+    color: '#666',
+    fontSize: 13,
   },
 });

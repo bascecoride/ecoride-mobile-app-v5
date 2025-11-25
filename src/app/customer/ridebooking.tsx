@@ -12,7 +12,9 @@ import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { RFValue } from "react-native-responsive-fontsize";
 import { commonStyles } from "@/styles/commonStyles";
 import CustomButton from "@/components/shared/CustomButton";
-import { createRide } from "@/service/rideService";
+import { createRide, VehicleType, VEHICLE_PASSENGER_LIMITS } from "@/service/rideService";
+import { getFareRatesMap } from "@/service/fareRateService";
+import BookingOptionsModal from "@/components/customer/BookingOptionsModal";
 
 interface TravelTimeData {
   durationInSeconds: number;
@@ -24,14 +26,34 @@ const RideBooking = () => {
   const route = useRoute() as any;
   const item = route?.params as any;
   const { location } = useUserStore() as any;
-  const [selectedOption, setSelectedOption] = useState("Bike");
+  const [selectedOption, setSelectedOption] = useState<VehicleType>("Single Motorcycle");
   const [loading, setLoading] = useState(false);
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [passengerCount, setPassengerCount] = useState(1);
+  const [dropLandmark, setDropLandmark] = useState("");
   const [travelTimes, setTravelTimes] = useState<Record<string, TravelTimeData>>({});
   const [loadingTravelTimes, setLoadingTravelTimes] = useState(true);
+  const [fareRates, setFareRates] = useState<Record<string, { minimumRate: number; perKmRate: number }> | null>(null);
+
+  // Fetch dynamic fare rates from server
+  useEffect(() => {
+    const fetchFareRates = async () => {
+      try {
+        const rates = await getFareRatesMap();
+        setFareRates(rates);
+        console.log('✅ Fare rates loaded:', rates);
+      } catch (error) {
+        console.error('❌ Error loading fare rates:', error);
+        // Will use default rates from calculateFare
+      }
+    };
+
+    fetchFareRates();
+  }, []);
 
   const farePrices = useMemo(
-    () => calculateFare(parseFloat(item?.distanceInKm)),
-    [item?.distanceInKm]
+    () => calculateFare(parseFloat(item?.distanceInKm), fareRates || undefined),
+    [item?.distanceInKm, fareRates]
   );
 
   // Fetch travel times for all vehicle types
@@ -124,11 +146,30 @@ const RideBooking = () => {
     ];
   }, [farePrices, travelTimes]);
 
-  const handleOptionSelect = useCallback((type: string) => {
+  const handleOptionSelect = useCallback((type: VehicleType) => {
     setSelectedOption(type);
-  }, []);
+    // Reset passenger count if it exceeds max for new vehicle type
+    const maxPassengers = VEHICLE_PASSENGER_LIMITS[type] || 1;
+    if (passengerCount > maxPassengers) {
+      setPassengerCount(maxPassengers);
+    }
+  }, [passengerCount]);
 
-  const handleRideBooking = async () => {
+  const handleBookRidePress = () => {
+    // Show the booking options modal before creating the ride
+    setShowBookingModal(true);
+  };
+
+  const handleBookingConfirm = async (passengers: number, landmark: string) => {
+    setPassengerCount(passengers);
+    setDropLandmark(landmark);
+    setShowBookingModal(false);
+    
+    // Proceed with ride booking
+    await handleRideBooking(passengers, landmark);
+  };
+
+  const handleRideBooking = async (passengers: number = passengerCount, landmark: string = dropLandmark) => {
     setLoading(true);
 
     try {
@@ -145,13 +186,6 @@ const RideBooking = () => {
         return;
       }
 
-      // Convert vehicle type
-      const vehicleType = selectedOption === "Single Motorcycle"
-        ? "Single Motorcycle"
-        : selectedOption === "Tricycle"
-        ? "Tricycle"
-        : "Cab";
-
       // Ensure coordinates are valid numbers
       const dropLat = Number(item.drop_latitude);
       const dropLng = Number(item.drop_longitude);
@@ -165,11 +199,13 @@ const RideBooking = () => {
       }
 
       console.log("Creating ride with payload:", {
-        vehicle: vehicleType,
+        vehicle: selectedOption,
+        passengerCount: passengers,
         drop: {
           latitude: dropLat,
           longitude: dropLng,
           address: item.drop_address,
+          landmark: landmark || undefined,
         },
         pickup: {
           latitude: pickupLat,
@@ -179,11 +215,13 @@ const RideBooking = () => {
       });
 
       await createRide({
-        vehicle: vehicleType,
+        vehicle: selectedOption,
+        passengerCount: passengers,
         drop: {
           latitude: dropLat,
           longitude: dropLng,
           address: item.drop_address,
+          landmark: landmark || undefined,
         },
         pickup: {
           latitude: pickupLat,
@@ -308,7 +346,16 @@ const RideBooking = () => {
           title="Book Ride"
           disabled={loading}
           loading={loading}
-          onPress={handleRideBooking}
+          onPress={handleBookRidePress}
+        />
+
+        {/* Booking Options Modal */}
+        <BookingOptionsModal
+          visible={showBookingModal}
+          onClose={() => setShowBookingModal(false)}
+          onConfirm={handleBookingConfirm}
+          vehicleType={selectedOption}
+          dropAddress={item?.drop_address || ""}
         />
       </View>
     </View>

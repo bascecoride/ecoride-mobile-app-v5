@@ -13,6 +13,7 @@ import { RFValue } from "react-native-responsive-fontsize";
 import DriverDetailsModal from "./DriverDetailsModal";
 import ActiveRidersModal from "./ActiveRidersModal";
 import * as Location from "expo-location";
+import { getDistanceRadiusInMeters } from "@/service/appSettingsService";
 
 const DraggableMap: FC<{ height: number }> = ({ height }) => {
   const isFocused = useIsFocused();
@@ -23,10 +24,26 @@ const DraggableMap: FC<{ height: number }> = ({ height }) => {
   const mapRef = useRef<MapView>(null);
   const { setLocation, location, outOfRange, setOutOfRange } = useUserStore();
   const { emit, on, off } = useWS();
-  const MAX_DISTANCE_THRESHOLD = 50000000; // 50,000km for testing (was 10km)
+  const [maxDistanceThreshold, setMaxDistanceThreshold] = useState(3000); // Default 3km, will be updated from server
   
   // Animation for arrow rotation
   const arrowRotation = useRef(new Animated.Value(0)).current;
+
+  // Fetch dynamic distance radius from server on mount
+  useEffect(() => {
+    const fetchDistanceRadius = async () => {
+      try {
+        const radiusInMeters = await getDistanceRadiusInMeters();
+        setMaxDistanceThreshold(radiusInMeters);
+        console.log(`📏 Distance radius set to: ${radiusInMeters / 1000}km`);
+      } catch (error) {
+        console.error("Error fetching distance radius:", error);
+        // Keep default value of 3km
+      }
+    };
+    
+    fetchDistanceRadius();
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -287,7 +304,7 @@ const DraggableMap: FC<{ height: number }> = ({ height }) => {
         longitude: newRegion.longitude,
       };
       const distance = haversine(userLocation, newLocation);
-      setOutOfRange(distance > MAX_DISTANCE_THRESHOLD);
+      setOutOfRange(distance > maxDistanceThreshold);
     }
   };
 
@@ -331,7 +348,12 @@ const DraggableMap: FC<{ height: number }> = ({ height }) => {
         {nearbyRiders
           ?.filter(
             (rider: any) =>
-              rider?.latitude && rider.longitude
+              rider?.latitude && 
+              rider?.longitude && 
+              typeof rider.latitude === 'number' && 
+              typeof rider.longitude === 'number' &&
+              !isNaN(rider.latitude) &&
+              !isNaN(rider.longitude)
           )
           .map((rider: any, index: number) => (
             <Marker
@@ -340,17 +362,33 @@ const DraggableMap: FC<{ height: number }> = ({ height }) => {
               flat
               anchor={{ x: 0.5, y: 0.5 }}
               coordinate={{
-                latitude: rider.latitude,
-                longitude: rider.longitude,
+                latitude: Number(rider.latitude),
+                longitude: Number(rider.longitude),
               }}
-              onPress={() => handleDriverPress(rider.id)}
+              onPress={() => {
+                try {
+                  if (rider?.id) {
+                    handleDriverPress(rider.id);
+                  }
+                } catch (error) {
+                  console.error('Error handling marker press:', error);
+                }
+              }}
             >
               <View
-                style={{ transform: [{ rotate: `${rider.rotation}deg` }] }}
+                style={{ 
+                  transform: [{ rotate: `${rider.rotation || 0}deg` }],
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
                 <Image
                   source={getVehicleMarkerImage(rider.vehicleType)}
-                  style={{ height: 40, width: 40, resizeMode: "contain" }}
+                  style={{ 
+                    height: 45, 
+                    width: 45, 
+                    resizeMode: "contain",
+                  }}
                 />
               </View>
             </Marker>
@@ -363,58 +401,117 @@ const DraggableMap: FC<{ height: number }> = ({ height }) => {
           style={mapStyles.marker}
         />
       </View>
-      <TouchableOpacity
-        style={mapStyles.gpsButton}
-        onPress={handleGpsButtonPress}
-      >
-        <MaterialCommunityIcons
-          name="crosshairs-gps"
-          size={RFValue(16)}
-          color="#3C75BE"
-        />
-      </TouchableOpacity>
-      
-      {/* Active Riders Button */}
-      <TouchableOpacity
-        style={[mapStyles.gpsButton, { bottom: 80, backgroundColor: '#4CAF50' }]}
-        onPress={() => setActiveRidersVisible(true)}
-      >
-        <View style={{ position: 'relative' }}>
+      {/* Map Control Buttons - Bottom */}
+      <View style={{
+        position: 'absolute',
+        left: 12,
+        right: 12,
+        bottom: 16,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-end',
+      }}>
+        {/* GPS Button - Left Side */}
+        <TouchableOpacity
+          style={{
+            backgroundColor: '#3C75BE',
+            paddingHorizontal: 14,
+            paddingVertical: 12,
+            borderRadius: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            shadowColor: '#3C75BE',
+            shadowOffset: { width: 0, height: 3 },
+            shadowOpacity: 0.3,
+            shadowRadius: 6,
+            elevation: 5,
+            maxWidth: '55%',
+          }}
+          onPress={handleGpsButtonPress}
+          activeOpacity={0.8}
+        >
+          <MaterialCommunityIcons
+            name="crosshairs-gps"
+            size={RFValue(16)}
+            color="white"
+          />
+          <Text style={{ 
+            color: 'white', 
+            fontSize: RFValue(9), 
+            fontWeight: '600',
+            flexShrink: 1,
+          }}>
+            GO TO MY LOCATION
+          </Text>
+        </TouchableOpacity>
+
+        {/* Active Riders Button - Right Side */}
+        <TouchableOpacity
+          style={{
+            backgroundColor: '#00B14F',
+            paddingHorizontal: 14,
+            paddingVertical: 12,
+            borderRadius: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            shadowColor: '#00B14F',
+            shadowOffset: { width: 0, height: 3 },
+            shadowOpacity: 0.3,
+            shadowRadius: 6,
+            elevation: 5,
+          }}
+          onPress={() => setActiveRidersVisible(true)}
+          activeOpacity={0.8}
+        >
           <MaterialCommunityIcons
             name="account-group"
             size={RFValue(16)}
             color="white"
           />
+          <Text style={{ 
+            color: 'white', 
+            fontSize: RFValue(9), 
+            fontWeight: '600',
+          }}>
+            ACTIVE RIDERS
+          </Text>
           {nearbyRiders.length > 0 && (
             <View style={{
-              position: 'absolute',
-              top: -8,
-              right: -8,
-              backgroundColor: '#FF4444',
+              backgroundColor: '#FF3B30',
               borderRadius: 10,
               minWidth: 20,
               height: 20,
               justifyContent: 'center',
               alignItems: 'center',
-              borderWidth: 2,
-              borderColor: 'white',
+              marginLeft: 2,
             }}>
-              <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>
-                {nearbyRiders.length}
+              <Text style={{ color: 'white', fontSize: 9, fontWeight: 'bold' }}>
+                {nearbyRiders.length > 9 ? '9+' : nearbyRiders.length}
               </Text>
             </View>
           )}
-        </View>
-      </TouchableOpacity>
+        </TouchableOpacity>
+      </View>
       
-      {/* Dynamic Arrow pointing to nearest rider */}
+      {/* Dynamic Arrow pointing to nearest rider - Top Right (below header) */}
       {nearestRider && (
         <View style={{
           position: 'absolute',
-          top: 60,
-          left: 20,
+          top: 70,
+          right: 12,
           alignItems: 'center',
+          backgroundColor: '#fff',
+          borderRadius: 14,
+          padding: 10,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.15,
+          shadowRadius: 4,
+          elevation: 4,
         }}>
+          <Text style={{ fontSize: 8, color: '#666', marginBottom: 4, fontWeight: '500' }}>NEAREST</Text>
           <Animated.View
             style={{
               transform: [{
@@ -427,23 +524,16 @@ const DraggableMap: FC<{ height: number }> = ({ height }) => {
           >
             <MaterialCommunityIcons
               name="navigation"
-              size={RFValue(24)}
+              size={RFValue(22)}
               color="#FF6B35"
-              style={{
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.3,
-                shadowRadius: 4,
-                elevation: 5,
-              }}
             />
           </Animated.View>
           <View style={{
-            backgroundColor: 'rgba(255, 107, 53, 0.9)',
-            paddingHorizontal: 8,
+            backgroundColor: '#FF6B35',
+            paddingHorizontal: 10,
             paddingVertical: 4,
-            borderRadius: 12,
-            marginTop: 4,
+            borderRadius: 8,
+            marginTop: 6,
           }}>
             <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>
               {formatDistance(nearestRider.distance)}

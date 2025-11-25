@@ -942,7 +942,7 @@ const WebViewMap = forwardRef<WebViewMapRef, WebViewMapProps>(({
             // Improved Google Maps loading with error handling
             function loadGoogleMaps() {
                 const script = document.createElement('script');
-                script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyAJEayMulsZ_LDps2fKN22Q-ED2f3BwGIw&libraries=geometry';
+                script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyAO0FLe4ZAqH36QIrkbhsb2qpHdS-tZVlc&libraries=geometry';
                 script.async = true;
                 script.defer = true;
                 

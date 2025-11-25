@@ -129,12 +129,24 @@ export const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2
     return R * c;
 };
 
-export const calculateFare = (distance: number) => {
-    const rateStructure = {
+/**
+ * Calculate fare based on distance and dynamic rate structure from server
+ * @param distance - Distance in kilometers
+ * @param rateStructure - Optional custom rate structure (if not provided, uses default)
+ */
+export const calculateFare = (
+    distance: number, 
+    rateStructure?: Record<string, { minimumRate: number; perKmRate: number }>
+) => {
+    // Default rate structure (fallback if server rates not available)
+    const defaultRates = {
         "Single Motorcycle": { minimumRate: 15, perKmRate: 2.5 },
         "Tricycle": { minimumRate: 20, perKmRate: 2.8 },
         "Cab": { minimumRate: 30, perKmRate: 3 },
     };
+
+    // Use provided rate structure or default
+    const rates = rateStructure || defaultRates;
 
     const fareCalculation = (minimumRate: number, perKmRate: number) => {
         const calculatedFare = distance * perKmRate;
@@ -142,9 +154,18 @@ export const calculateFare = (distance: number) => {
     };
 
     return {
-        "Single Motorcycle": fareCalculation(rateStructure["Single Motorcycle"].minimumRate, rateStructure["Single Motorcycle"].perKmRate),
-        "Tricycle": fareCalculation(rateStructure["Tricycle"].minimumRate, rateStructure["Tricycle"].perKmRate),
-        "Cab": fareCalculation(rateStructure["Cab"].minimumRate, rateStructure["Cab"].perKmRate),
+        "Single Motorcycle": fareCalculation(
+            rates["Single Motorcycle"].minimumRate, 
+            rates["Single Motorcycle"].perKmRate
+        ),
+        "Tricycle": fareCalculation(
+            rates["Tricycle"].minimumRate, 
+            rates["Tricycle"].perKmRate
+        ),
+        "Cab": fareCalculation(
+            rates["Cab"].minimumRate, 
+            rates["Cab"].perKmRate
+        ),
     };
 }
 

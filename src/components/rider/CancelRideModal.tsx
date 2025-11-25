@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Modal,
@@ -27,17 +27,13 @@ const CancelRideModal: React.FC<CancelRideModalProps> = ({
   const [selectedReason, setSelectedReason] = useState<string>('');
   const [customReason, setCustomReason] = useState<string>('');
 
-  useEffect(() => {
-    console.log('CancelRideModal visibility changed:', visible);
-  }, [visible]);
-
   const predefinedReasons = [
-    'Change of plans',
-    'Found another ride',
-    'Taking too long',
+    'Vehicle issue',
+    'Emergency',
+    'Passenger not responding',
     'Wrong pickup location',
-    'Wrong destination',
-    'Driver not responding',
+    'Unsafe situation',
+    'Too far from pickup',
     'Other',
   ];
 
@@ -60,8 +56,6 @@ const CancelRideModal: React.FC<CancelRideModalProps> = ({
     setCustomReason('');
     onClose();
   };
-
-  console.log('CancelRideModal rendering, visible:', visible);
 
   return (
     <Modal

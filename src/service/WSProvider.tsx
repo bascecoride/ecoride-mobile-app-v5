@@ -92,7 +92,12 @@ export const WSProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [socketAccessToken]);
 
   const emit = (event: string, data: any = {}) => {
-    socket.current?.emit(event, data);
+    if (socket.current?.connected) {
+      console.log(`📤 Socket emitting '${event}':`, data);
+      socket.current.emit(event, data);
+    } else {
+      console.warn(`⚠️ Socket not connected, cannot emit '${event}'`);
+    }
   };
 
   const on = (event: string, cb: (data: any) => void) => {

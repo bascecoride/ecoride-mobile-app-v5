@@ -25,6 +25,7 @@ interface ProfileData {
   role: string;
   userRole: string;
   vehicleType: string;
+  plateNumber: string;
   status: string;
   disapprovalReason: string;
   penaltyComment: string;
@@ -55,6 +56,7 @@ const RiderProfilePage = () => {
     role: "",
     userRole: "",
     vehicleType: "",
+    plateNumber: "",
     status: "",
     disapprovalReason: "",
     penaltyComment: "",
@@ -87,6 +89,7 @@ const RiderProfilePage = () => {
         role: userData.role || "",
         userRole: userData.userRole || "",
         vehicleType: userData.vehicleType || "",
+        plateNumber: userData.plateNumber || "",
         status: userData.status || "",
         disapprovalReason: userData.disapprovalReason || "",
         penaltyComment: userData.penaltyComment || "",
@@ -263,7 +266,7 @@ const RiderProfilePage = () => {
                     {profileData.status.toUpperCase()}
                   </CustomText>
                 </View>
-                {profileData.disapprovalReason && (
+                {profileData.status?.toLowerCase() === 'disapproved' && profileData.disapprovalReason && (
                   <View style={styles.infoItem}>
                     <CustomText fontFamily="Medium" fontSize={12} style={styles.infoLabel}>
                       Reason:
@@ -477,6 +480,16 @@ const RiderProfilePage = () => {
                   </View>
                 )}
               </View>
+
+              <CustomInput
+                label="Plate Number"
+                value={profileData.plateNumber}
+                onChangeText={(text: string) => handleInputChange("plateNumber", text.toUpperCase())}
+                editable={isEditing}
+                autoCapitalize="characters"
+                placeholder="Enter plate number"
+                style={isEditing ? styles.inputEditable : styles.inputDisabled}
+              />
             </View>
           </View>
 

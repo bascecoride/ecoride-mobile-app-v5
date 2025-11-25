@@ -40,6 +40,7 @@ interface RideHistoryItemProps {
     } | null;
     createdAt: string;
     otp?: string;
+    paymentMethod?: "CASH" | "GCASH" | null;
   };
   onPress?: () => void;
   isRider?: boolean;
@@ -436,6 +437,27 @@ const RideHistoryItem: React.FC<RideHistoryItemProps> = ({ ride, onPress, isRide
                       </CustomText>
                     </View>
                   )}
+                  
+                  {ride.paymentMethod && (
+                    <View style={styles.detailItem}>
+                      <CustomText fontFamily="Regular" fontSize={12} style={styles.detailLabel}>
+                        Payment Method
+                      </CustomText>
+                      <View style={styles.paymentMethodContainer}>
+                        <Image
+                          source={ride.paymentMethod === "CASH" 
+                            ? require("@/assets/icons/rupee.png")
+                            : require("@/assets/images/gcash-logo.png")
+                          }
+                          style={styles.paymentIcon}
+                          resizeMode="contain"
+                        />
+                        <CustomText fontFamily="Medium" fontSize={14} style={styles.detailValue}>
+                          {ride.paymentMethod === "CASH" ? "Cash" : "GCash"}
+                        </CustomText>
+                      </View>
+                    </View>
+                  )}
                 </View>
               </View>
               
@@ -749,6 +771,15 @@ const styles = StyleSheet.create({
   },
   ratedIcon: {
     marginRight: 4,
+  },
+  paymentMethodContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  paymentIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 6,
   },
 });
 

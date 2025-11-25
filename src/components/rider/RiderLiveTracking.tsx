@@ -84,10 +84,10 @@ const RiderLiveTracking: FC<{
         longitudeDelta: 0.02,
       };
     }
-    console.log("🗺️ Using Manila fallback region");
+    console.log("🗺️ Using San Ildefonso, Bulacan fallback region");
     return {
-      latitude: 14.5995,
-      longitude: 120.9842,
+      latitude: 14.9500,
+      longitude: 120.9500,
       latitudeDelta: 0.02,
       longitudeDelta: 0.02,
     };

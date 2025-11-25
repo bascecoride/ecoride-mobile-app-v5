@@ -72,6 +72,16 @@ const DriverDetailsModal: FC<DriverDetailsModalProps> = ({
     return type === 'Cab' ? 'Four Wheel' : type;
   };
 
+  // Mask license ID - show only last 3 characters, rest as asterisks
+  const maskLicenseId = (licenseId: string) => {
+    if (!licenseId || licenseId.length <= 3) {
+      return licenseId; // Return as-is if too short to mask
+    }
+    const visiblePart = licenseId.slice(-3); // Last 3 characters
+    const maskedPart = '*'.repeat(licenseId.length - 3); // Asterisks for the rest
+    return maskedPart + visiblePart;
+  };
+
   const handleCallDriver = async () => {
     const phoneNumber = driverDetails.phone;
     if (phoneNumber) {
@@ -217,7 +227,7 @@ const DriverDetailsModal: FC<DriverDetailsModalProps> = ({
                     <View style={styles.contactInfo}>
                       <CustomText fontSize={12} style={styles.contactLabel}>License ID</CustomText>
                       <CustomText fontFamily="Medium" fontSize={14} style={styles.contactValue}>
-                        {driverDetails.licenseId}
+                        {maskLicenseId(driverDetails.licenseId)}
                       </CustomText>
                     </View>
                   </View>
@@ -255,7 +265,7 @@ const DriverDetailsModal: FC<DriverDetailsModalProps> = ({
             </View>
           </ScrollView>
 
-          {/* Action Buttons */}
+          {/* Action Buttons 
           <View style={styles.actionButtons}>
             <TouchableOpacity style={styles.callButton} onPress={handleCallDriver}>
               <Ionicons name="call" size={RFValue(18)} color="#fff" />
@@ -263,7 +273,7 @@ const DriverDetailsModal: FC<DriverDetailsModalProps> = ({
                 Call Driver
               </CustomText>
             </TouchableOpacity>
-          </View>
+          </View> */}
         </View>
       </View>
 
@@ -387,7 +397,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: Colors.primary,
+    backgroundColor: '#9E9E9E',
     justifyContent: "center",
     alignItems: "center",
   },

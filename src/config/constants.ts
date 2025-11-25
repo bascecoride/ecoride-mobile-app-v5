@@ -25,10 +25,10 @@ export const REFRESH_INTERVALS = {
   LOCATION_UPDATE: 10000,
 };
 
-// Default location (Manila, Philippines)
+// Default location (San Ildefonso, Bulacan, Philippines)
 export const DEFAULT_LOCATION = {
-  latitude: 14.5995,
-  longitude: 120.9842,
-  address: "Manila, Philippines (Fallback)",
+  latitude: 14.9500,
+  longitude: 120.9500,
+  address: "San Ildefonso, Bulacan (Fallback)",
   heading: 0,
 };

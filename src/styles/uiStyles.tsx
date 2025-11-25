@@ -11,10 +11,10 @@ export const uiStyles = StyleSheet.create({
     container: {
         flexDirection: 'row',
         alignItems: "center",
-        paddingHorizontal: 15,
-        overflow: "hidden",
+        paddingHorizontal: 10,
         paddingVertical: 10,
-        justifyContent: 'space-between'
+        justifyContent: 'space-between',
+        width: '100%',
     },
     btn: {
         backgroundColor: Colors.background,

@@ -222,7 +222,7 @@ const CustomerProfilePage = () => {
                     {profileData.status.toUpperCase()}
                   </CustomText>
                 </View>
-                {profileData.disapprovalReason && (
+                {profileData.status?.toLowerCase() === 'disapproved' && profileData.disapprovalReason && (
                   <View style={styles.infoItem}>
                     <CustomText fontFamily="Medium" fontSize={12} style={styles.infoLabel}>
                       Reason:

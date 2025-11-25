@@ -53,9 +53,10 @@ export const customMapStyle = [
   }
 ]
 
+// San Ildefonso, Bulacan, Philippines - Default fallback location
 export const indiaIntialRegion = {
-  latitude: 14.5995,
-  longitude: 120.9842,
+  latitude: 14.9500,
+  longitude: 120.9500,
   latitudeDelta: 0.5,
   longitudeDelta: 0.5,
 }

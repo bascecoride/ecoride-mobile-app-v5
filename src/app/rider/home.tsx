@@ -20,6 +20,7 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/utils/Constants";
 import { chatNotificationService } from "@/service/chatNotificationService";
+import { disapprovalService } from "@/service/disapprovalService";
 
 const RiderHome = () => {
   const isFocused = useIsFocused();
@@ -53,6 +54,9 @@ const RiderHome = () => {
   // Initial load of rides and setup chat notifications
   useEffect(() => {
     getMyRides(false);
+    
+    // Initialize disapproval service for real-time account status monitoring
+    disapprovalService.initialize({ on, off });
     
     // Subscribe to chat notification service for real-time updates
     const unsubscribe = chatNotificationService.subscribe((count) => {
@@ -115,11 +119,11 @@ const RiderHome = () => {
           const isLocationEnabled = await Location.hasServicesEnabledAsync();
           if (!isLocationEnabled) {
             console.log('Location services not enabled, using fallback location');
-            // Use fallback location for Manila
+            // Use fallback location for San Ildefonso, Bulacan
             const fallbackLocation = {
-              latitude: 14.5995,
-              longitude: 120.9842,
-              address: "Manila, Philippines (Fallback)",
+              latitude: 14.9500,
+              longitude: 120.9500,
+              address: "San Ildefonso, Bulacan (Fallback)",
               heading: 0,
             };
             setLocation(fallbackLocation);
@@ -154,11 +158,11 @@ const RiderHome = () => {
           );
         } else {
           console.log('Location permission denied, using fallback location');
-          // Use fallback location for Manila
+          // Use fallback location for San Ildefonso, Bulacan
           const fallbackLocation = {
-            latitude: 14.5995,
-            longitude: 120.9842,
-            address: "Manila, Philippines (Fallback)",
+            latitude: 14.9500,
+            longitude: 120.9500,
+            address: "San Ildefonso, Bulacan (Fallback)",
             heading: 0,
           };
           setLocation(fallbackLocation);
@@ -170,11 +174,11 @@ const RiderHome = () => {
         }
       } catch (error) {
         console.log('Error with location services, using fallback:', error);
-        // Use fallback location for Manila
+        // Use fallback location for San Ildefonso, Bulacan
         const fallbackLocation = {
-          latitude: 14.5995,
-          longitude: 120.9842,
-          address: "Manila, Philippines (Fallback)",
+          latitude: 14.9500,
+          longitude: 120.9500,
+          address: "San Ildefonso, Bulacan (Fallback)",
           heading: 0,
         };
         setLocation(fallbackLocation);

@@ -25,7 +25,7 @@ const Role = () => {
 
       <TouchableOpacity style={roleStyles.card} onPress={handleCustomerPress}>
         <Image
-          source={require("@/assets/images/customer_banner4.png")}
+          source={require("@/assets/images/eco-passenger-img.png")}
           style={roleStyles.image}
         />
         <View style={roleStyles.cardContent}>
@@ -38,7 +38,7 @@ const Role = () => {
 
       <TouchableOpacity style={roleStyles.card} onPress={handleRiderPress}>
         <Image
-          source={require("@/assets/images/rider_banner1.png")}
+          source={require("@/assets/images/eco-driver-img.png")}
           style={roleStyles.image}
         />
         <View style={roleStyles.cardContent}>

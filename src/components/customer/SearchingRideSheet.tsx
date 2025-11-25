@@ -1,5 +1,5 @@
-import { View, Text, ActivityIndicator, TouchableOpacity } from "react-native";
-import React, { FC } from "react";
+import { View, Text, ActivityIndicator, TouchableOpacity, BackHandler } from "react-native";
+import React, { FC, useState, useEffect } from "react";
 import { useWS } from "@/service/WSProvider";
 import { rideStyles } from "@/styles/rideStyles";
 import { commonStyles } from "@/styles/commonStyles";
@@ -8,6 +8,7 @@ import CustomText from "../shared/CustomText";
 import { vehicleIcons } from "@/utils/mapUtils";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import CancelRideModal from "./CancelRideModal";
 
 type VehicleType = "Single Motorcycle" | "Tricycle" | "Cab";
 
@@ -21,6 +22,18 @@ interface RideItem {
 
 const SearchingRideSheet: FC<{ item: RideItem }> = ({ item }) => {
   const { emit } = useWS();
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+
+  // Disable hardware back button during ride searching
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      console.log('🚫 Hardware back button disabled during ride searching');
+      return true; // Prevent default back behavior
+    });
+
+    return () => backHandler.remove();
+  }, []);
 
   return (
     <View>
@@ -101,21 +114,33 @@ const SearchingRideSheet: FC<{ item: RideItem }> = ({ item }) => {
 
       <View style={rideStyles?.bottomButtonContainer}>
         <TouchableOpacity
-          style={rideStyles.cancelButton}
+          style={[rideStyles.cancelButton, { flex: 1, marginLeft: 0 }]}
           onPress={() => {
-            emit("cancelRide", item?._id);
+            console.log('Cancel button pressed in SearchingRideSheet, opening modal...');
+            setShowCancelModal(true);
           }}
         >
           <CustomText style={rideStyles?.cancelButtonText}>Cancel</CustomText>
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={rideStyles.backButton2}
-          onPress={() => router.back()}
-        >
-          <CustomText style={rideStyles?.backButtonText}>Back</CustomText>
-        </TouchableOpacity>
       </View>
+
+      {showCancelModal && (
+        <CancelRideModal
+          visible={showCancelModal}
+          onClose={() => {
+            console.log('Modal closed in SearchingRideSheet');
+            setShowCancelModal(false);
+          }}
+          onConfirm={(reason) => {
+            console.log('Cancellation confirmed in SearchingRideSheet with reason:', reason);
+            setCancelLoading(true);
+            emit("cancelRide", { rideId: item?._id, reason });
+            setShowCancelModal(false);
+            setCancelLoading(false);
+          }}
+          loading={cancelLoading}
+        />
+      )}
 
     </View>
   );
