@@ -108,7 +108,7 @@ const SearchingRideSheet: FC<{ item: RideItem }> = ({ item }) => {
             </CustomText>
           </View>
 
-          <CustomText fontSize={10}>Payment via cash</CustomText>
+       
         </View>
       </View>
 

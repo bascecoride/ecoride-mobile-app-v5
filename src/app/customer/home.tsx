@@ -20,7 +20,7 @@ import { Colors } from "@/utils/Constants";
 import { useWS } from "@/service/WSProvider";
 import CustomText from "@/components/shared/CustomText";
 import { chatNotificationService } from "@/service/chatNotificationService";
-import { disapprovalService } from "@/service/disapprovalService";
+// Note: disapprovalService is now handled directly in WSProvider for reliability
 
 const androidHeights = [
   screenHeight * 0.12,
@@ -38,7 +38,7 @@ const CustomerHome = () => {
 
   const [mapHeight, setMapHeight] = useState(snapPoints[0]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const { on, off, emit } = useWS();
+  const { on, off, emit, disconnect } = useWS();
 
   const handleSheetChanges = useCallback((index: number) => {
     let height = screenHeight * 0.8;
@@ -51,8 +51,8 @@ const CustomerHome = () => {
   useEffect(() => {
     getMyRides();
     
-    // Initialize disapproval service for real-time account status monitoring
-    disapprovalService.initialize({ on, off });
+    // Note: Account disapproval is now handled directly in WSProvider for reliability
+    // No need to initialize disapprovalService here
     
     // Subscribe to chat notification service for real-time updates
     const unsubscribe = chatNotificationService.subscribe((count) => {

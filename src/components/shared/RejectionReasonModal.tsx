@@ -107,25 +107,52 @@ const RejectionReasonModal: React.FC<RejectionReasonModalProps> = ({
                 What to do next:
               </CustomText>
               <View style={styles.infoBox}>
-                <View style={styles.infoItem}>
-                  <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
-                  <CustomText fontSize={13} style={styles.infoText}>
-                    Review the reason for disapproval
-                  </CustomText>
-                </View>
-                <View style={styles.infoItem}>
-                  <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
-                  <CustomText fontSize={13} style={styles.infoText}>
-                    Contact support if you believe this is an error
-                  </CustomText>
-                </View>
-                {formattedDeadline && (
-                  <View style={styles.infoItem}>
-                    <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
-                    <CustomText fontSize={13} style={styles.infoText}>
-                      Wait until the auto-unblock date to try again
-                    </CustomText>
-                  </View>
+                {status === 'pending' ? (
+                  // Pending approval messages
+                  <>
+                    <View style={styles.infoItem}>
+                      <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
+                      <CustomText fontSize={13} style={styles.infoText}>
+                        Please wait while an administrator reviews your account
+                      </CustomText>
+                    </View>
+                    <View style={styles.infoItem}>
+                      <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
+                      <CustomText fontSize={13} style={styles.infoText}>
+                        You will be notified once your account is approved
+                      </CustomText>
+                    </View>
+                    <View style={styles.infoItem}>
+                      <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
+                      <CustomText fontSize={13} style={styles.infoText}>
+                        Make sure your submitted documents are valid and clear
+                      </CustomText>
+                    </View>
+                  </>
+                ) : (
+                  // Disapproved messages
+                  <>
+                    <View style={styles.infoItem}>
+                      <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
+                      <CustomText fontSize={13} style={styles.infoText}>
+                        Review the reason for disapproval
+                      </CustomText>
+                    </View>
+                    <View style={styles.infoItem}>
+                      <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
+                      <CustomText fontSize={13} style={styles.infoText}>
+                        Contact support if you believe this is an error
+                      </CustomText>
+                    </View>
+                    {formattedDeadline && (
+                      <View style={styles.infoItem}>
+                        <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
+                        <CustomText fontSize={13} style={styles.infoText}>
+                          Wait until the auto-unblock date to try again
+                        </CustomText>
+                      </View>
+                    )}
+                  </>
                 )}
               </View>
             </View>

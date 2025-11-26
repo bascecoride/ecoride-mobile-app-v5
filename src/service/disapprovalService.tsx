@@ -17,6 +17,7 @@ interface SocketService {
   on: (event: string, callback: (data: any) => void) => void;
   off: (event: string) => void;
   disconnect?: () => void;
+  emit?: (event: string, data?: any) => void;
 }
 
 class DisapprovalService {
@@ -28,9 +29,16 @@ class DisapprovalService {
    * Initialize the disapproval listener with socket service
    */
   initialize(socketService: SocketService) {
-    if (this.isInitialized) {
-      console.log('⚠️ DisapprovalService already initialized');
+    // Allow re-initialization to refresh socket listeners
+    if (this.isInitialized && this.socketService === socketService) {
+      console.log('⚠️ DisapprovalService already initialized with same socket');
       return;
+    }
+
+    // Clean up previous listeners if re-initializing
+    if (this.isInitialized && this.socketService) {
+      console.log('🔄 Re-initializing DisapprovalService with new socket...');
+      this.socketService.off('accountDisapproved');
     }
 
     console.log('🔔 Initializing DisapprovalService...');
@@ -39,11 +47,13 @@ class DisapprovalService {
     // Listen for account disapproval events from server
     socketService.on('accountDisapproved', (data: { reason: string; timestamp: string }) => {
       console.log('🚨 Account disapproved event received:', data);
-      this.handleDisapproval(data.reason);
+      console.log('🚨 Reason:', data?.reason);
+      console.log('🚨 Timestamp:', data?.timestamp);
+      this.handleDisapproval(data?.reason || 'Your account has been disapproved by an administrator');
     });
 
     this.isInitialized = true;
-    console.log('✅ DisapprovalService initialized');
+    console.log('✅ DisapprovalService initialized and listening for accountDisapproved events');
   }
 
   /**
@@ -51,22 +61,26 @@ class DisapprovalService {
    */
   private async handleDisapproval(reason: string) {
     console.log('🚨 Handling account disapproval...');
+    console.log('🚨 Disapproval reason:', reason);
 
-    // Show alert to user
-    Alert.alert(
-      '⚠️ Account Disapproved',
-      reason || 'Your account has been disapproved by an administrator. You will be logged out.',
-      [
-        {
-          text: 'OK',
-          onPress: async () => {
-            console.log('User acknowledged disapproval, logging out...');
-            await this.performLogout();
+    // Use setTimeout to ensure alert shows properly on all platforms
+    setTimeout(() => {
+      Alert.alert(
+        '⚠️ Account Disapproved',
+        reason || 'Your account has been disapproved by an administrator. You will be logged out.',
+        [
+          {
+            text: 'OK',
+            onPress: async () => {
+              console.log('User acknowledged disapproval, logging out...');
+              await this.performLogout();
+            },
           },
-        },
-      ],
-      { cancelable: false } // Prevent dismissing without clicking OK
-    );
+        ],
+        { cancelable: false } // Prevent dismissing without clicking OK
+      );
+      console.log('🚨 Alert should now be visible');
+    }, 100);
 
     // Notify all listeners
     this.listeners.forEach((callback) => {

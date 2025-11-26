@@ -472,7 +472,7 @@ const LiveRide = () => {
                       <View style={{
                         flexDirection: 'row',
                         alignItems: 'center',
-                        marginBottom: rideData?.drop?.landmark ? 12 : 0,
+                        marginBottom: (rideData?.pickup?.landmark || rideData?.drop?.landmark) ? 12 : 0,
                         backgroundColor: '#F5F5F5',
                         padding: 10,
                         borderRadius: 10,
@@ -499,7 +499,41 @@ const LiveRide = () => {
                       </View>
                     )}
                     
-                    {/* Landmark - Only if exists */}
+                    {/* Pickup Landmark - Only if exists */}
+                    {rideData?.pickup?.landmark && (
+                      <View style={{
+                        backgroundColor: '#E8F5E9',
+                        padding: 10,
+                        borderRadius: 10,
+                        borderLeftWidth: 4,
+                        borderLeftColor: '#4CAF50',
+                        marginBottom: rideData?.drop?.landmark ? 12 : 0,
+                      }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                          <View style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 16,
+                            backgroundColor: '#4CAF50',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            marginRight: 10,
+                          }}>
+                            <Ionicons name="navigate" size={16} color="white" />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <CustomText fontSize={10} style={{ color: '#666' }}>
+                              PICK-UP LANDMARK
+                            </CustomText>
+                            <CustomText fontFamily="Medium" fontSize={12} style={{ color: '#333', marginTop: 2 }}>
+                              {rideData.pickup.landmark}
+                            </CustomText>
+                          </View>
+                        </View>
+                      </View>
+                    )}
+                    
+                    {/* Drop-off Landmark - Only if exists */}
                     {rideData?.drop?.landmark && (
                       <View style={{
                         backgroundColor: '#FFF8E1',

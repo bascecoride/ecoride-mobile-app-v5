@@ -58,13 +58,13 @@ const DriverDetailsModal: FC<DriverDetailsModalProps> = ({
   const getVehicleImage = (type: string) => {
     switch (type) {
       case 'Single Motorcycle':
-        return require('@/assets/images/bike_marker.png');
+        return require('@/assets/icons/SingleMotorcycle-NoBG.png');
       case 'Tricycle':
-        return require('@/assets/images/auto_marker.png');
+        return require('@/assets/icons/Tricycle-NoBG.png');
       case 'Cab':
-        return require('@/assets/images/cab_marker.png');
+        return require('@/assets/icons/Car-NoBG.png');
       default:
-        return require('@/assets/images/bike_marker.png');
+        return require('@/assets/icons/SingleMotorcycle-NoBG.png');
     }
   };
   
@@ -196,6 +196,13 @@ const DriverDetailsModal: FC<DriverDetailsModalProps> = ({
                     <CustomText fontFamily="SemiBold" fontSize={16} style={styles.vehicleType}>
                       {getVehicleDisplayName(driverDetails.vehicleType)}
                     </CustomText>
+                    {driverDetails.plateNumber && (
+                      <View style={styles.plateNumberContainer}>
+                        <CustomText fontFamily="Bold" fontSize={14} style={styles.plateNumber}>
+                          {driverDetails.plateNumber}
+                        </CustomText>
+                      </View>
+                    )}
                   </View>
                 </View>
               </View>
@@ -206,12 +213,12 @@ const DriverDetailsModal: FC<DriverDetailsModalProps> = ({
               <View style={styles.sectionHeader}>
                 <FontAwesome5 name="address-card" size={RFValue(16)} color={Colors.primary} />
                 <CustomText fontFamily="SemiBold" fontSize={16} style={styles.sectionTitle}>
-                  Contact Information
+                  Contact
                 </CustomText>
               </View>
               
               <View style={styles.contactCard}>
-                <View style={styles.contactItem}>
+                <View style={[styles.contactItem, { marginBottom: 0 }]}>
                   <FontAwesome5 name="phone-alt" size={RFValue(14)} color={Colors.primary} />
                   <View style={styles.contactInfo}>
                     <CustomText fontSize={12} style={styles.contactLabel}>Phone Number</CustomText>
@@ -220,9 +227,21 @@ const DriverDetailsModal: FC<DriverDetailsModalProps> = ({
                     </CustomText>
                   </View>
                 </View>
+              </View>
+            </View>
 
-                {driverDetails.licenseId && (
-                  <View style={styles.contactItem}>
+            {/* Other Information */}
+            {driverDetails.licenseId && (
+              <View style={styles.contactSection}>
+                <View style={styles.sectionHeader}>
+                  <FontAwesome5 name="info-circle" size={RFValue(16)} color={Colors.primary} />
+                  <CustomText fontFamily="SemiBold" fontSize={16} style={styles.sectionTitle}>
+                    Other Information
+                  </CustomText>
+                </View>
+                
+                <View style={styles.contactCard}>
+                  <View style={[styles.contactItem, { marginBottom: 0 }]}>
                     <FontAwesome5 name="id-card" size={RFValue(14)} color={Colors.primary} />
                     <View style={styles.contactInfo}>
                       <CustomText fontSize={12} style={styles.contactLabel}>License ID</CustomText>
@@ -231,9 +250,9 @@ const DriverDetailsModal: FC<DriverDetailsModalProps> = ({
                       </CustomText>
                     </View>
                   </View>
-                )}
+                </View>
               </View>
-            </View>
+            )}
 
             {/* Ratings Section */}
             <View style={styles.ratingsSection}>

@@ -20,11 +20,11 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/utils/Constants";
 import { chatNotificationService } from "@/service/chatNotificationService";
-import { disapprovalService } from "@/service/disapprovalService";
+// Note: disapprovalService is now handled directly in WSProvider for reliability
 
 const RiderHome = () => {
   const isFocused = useIsFocused();
-  const { emit, on, off } = useWS();
+  const { emit, on, off, disconnect } = useWS();
   const { onDuty, setLocation, user } = useRiderStore();
   const { token } = useAuthStore();
 
@@ -55,8 +55,8 @@ const RiderHome = () => {
   useEffect(() => {
     getMyRides(false);
     
-    // Initialize disapproval service for real-time account status monitoring
-    disapprovalService.initialize({ on, off });
+    // Note: Account disapproval is now handled directly in WSProvider for reliability
+    // No need to initialize disapprovalService here
     
     // Subscribe to chat notification service for real-time updates
     const unsubscribe = chatNotificationService.subscribe((count) => {

@@ -15,7 +15,7 @@ type VehicleType = "Single Motorcycle" | "Tricycle" | "Cab";
 interface RideItem {
   _id: string;
   vehicle?: VehicleType;
-  pickup: { address: string; latitude: number; longitude: number };
+  pickup: { address: string; latitude: number; longitude: number; landmark?: string };
   drop?: { address: string; latitude: number; longitude: number; landmark?: string };
   fare?: number;
   distance: number;
@@ -121,6 +121,30 @@ const RiderRidesItem: FC<{ item: RideItem; removeIt: () => void }> = ({
             >
               {item?.pickup?.address}
             </CustomText>
+            {/* Pickup Landmark description */}
+            {item?.pickup?.landmark && (
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginTop: 4,
+                backgroundColor: '#E8F5E9',
+                paddingHorizontal: 8,
+                paddingVertical: 4,
+                borderRadius: 6,
+                borderWidth: 1,
+                borderColor: '#4CAF50',
+              }}>
+                <Ionicons name="navigate" size={12} color="#4CAF50" />
+                <CustomText
+                  numberOfLines={2}
+                  fontSize={9}
+                  fontFamily="Medium"
+                  style={{ marginLeft: 4, color: '#666', flex: 1 }}
+                >
+                  📍 {item?.pickup?.landmark}
+                </CustomText>
+              </View>
+            )}
           </View>
         </View>
 

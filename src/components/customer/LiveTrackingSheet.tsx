@@ -14,7 +14,7 @@ type VehicleType = "Single Motorcycle" | "Tricycle" | "Cab";
 interface RideItem {
   _id: string;
   vehicle?: VehicleType;
-  pickup?: { address: string };
+  pickup?: { address: string; landmark?: string };
   drop?: { address: string; landmark?: string };
   fare?: number;
   otp?: string;
@@ -223,9 +223,35 @@ const LiveTrackingSheet: FC<{ item: RideItem }> = ({ item }) => {
             source={require("@/assets/icons/marker.png")}
             style={rideStyles.pinIcon}
           />
-          <CustomText fontSize={10} numberOfLines={2}>
-            {item?.pickup?.address}
-          </CustomText>
+          <View style={{ flex: 1 }}>
+            <CustomText fontSize={10} numberOfLines={2}>
+              {item?.pickup?.address}
+            </CustomText>
+            {/* Pickup Landmark Description */}
+            {item?.pickup?.landmark && (
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginTop: 6,
+                backgroundColor: '#E8F5E9',
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: '#4CAF50',
+              }}>
+                <Ionicons name="navigate" size={14} color="#4CAF50" />
+                <CustomText
+                  numberOfLines={2}
+                  fontSize={10}
+                  fontFamily="Medium"
+                  style={{ marginLeft: 6, color: '#666', flex: 1 }}
+                >
+                  📍 {item?.pickup?.landmark}
+                </CustomText>
+              </View>
+            )}
+          </View>
         </View>
 
         <View style={[commonStyles.flexRowGap, { width: "90%" }]}>
@@ -321,7 +347,7 @@ const LiveTrackingSheet: FC<{ item: RideItem }> = ({ item }) => {
             </CustomText>
           </View>
 
-          <CustomText fontSize={10}>Payment via cash</CustomText>
+    
         </View>
       </View>
 

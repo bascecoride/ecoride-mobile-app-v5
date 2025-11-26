@@ -105,6 +105,9 @@ const DraggableMap: FC<{ height: number }> = ({ height }) => {
             firstName: rider.firstName || "",
             lastName: rider.lastName || "",
             photo: rider.photo || null,
+            phone: rider.phone || null,
+            plateNumber: rider.plateNumber || null,
+            licenseId: rider.licenseId || null,
             averageRating: parseFloat(rider.averageRating) || 0,
             totalRatings: parseInt(rider.totalRatings) || 0,
           };

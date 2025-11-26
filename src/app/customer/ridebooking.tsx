@@ -31,6 +31,7 @@ const RideBooking = () => {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [passengerCount, setPassengerCount] = useState(1);
   const [dropLandmark, setDropLandmark] = useState("");
+  const [pickupLandmark, setPickupLandmark] = useState("");
   const [travelTimes, setTravelTimes] = useState<Record<string, TravelTimeData>>({});
   const [loadingTravelTimes, setLoadingTravelTimes] = useState(true);
   const [fareRates, setFareRates] = useState<Record<string, { minimumRate: number; perKmRate: number }> | null>(null);
@@ -160,16 +161,17 @@ const RideBooking = () => {
     setShowBookingModal(true);
   };
 
-  const handleBookingConfirm = async (passengers: number, landmark: string) => {
+  const handleBookingConfirm = async (passengers: number, dropLandmarkValue: string, pickupLandmarkValue: string) => {
     setPassengerCount(passengers);
-    setDropLandmark(landmark);
+    setDropLandmark(dropLandmarkValue);
+    setPickupLandmark(pickupLandmarkValue);
     setShowBookingModal(false);
     
     // Proceed with ride booking
-    await handleRideBooking(passengers, landmark);
+    await handleRideBooking(passengers, dropLandmarkValue, pickupLandmarkValue);
   };
 
-  const handleRideBooking = async (passengers: number = passengerCount, landmark: string = dropLandmark) => {
+  const handleRideBooking = async (passengers: number = passengerCount, dropLandmarkValue: string = dropLandmark, pickupLandmarkValue: string = pickupLandmark) => {
     setLoading(true);
 
     try {
@@ -205,12 +207,13 @@ const RideBooking = () => {
           latitude: dropLat,
           longitude: dropLng,
           address: item.drop_address,
-          landmark: landmark || undefined,
+          landmark: dropLandmarkValue || undefined,
         },
         pickup: {
           latitude: pickupLat,
           longitude: pickupLng,
           address: location.address,
+          landmark: pickupLandmarkValue || undefined,
         },
       });
 
@@ -221,12 +224,13 @@ const RideBooking = () => {
           latitude: dropLat,
           longitude: dropLng,
           address: item.drop_address,
-          landmark: landmark || undefined,
+          landmark: dropLandmarkValue || undefined,
         },
         pickup: {
           latitude: pickupLat,
           longitude: pickupLng,
           address: location.address,
+          landmark: pickupLandmarkValue || undefined,
         },
       });
     } catch (error) {
@@ -356,6 +360,7 @@ const RideBooking = () => {
           onConfirm={handleBookingConfirm}
           vehicleType={selectedOption}
           dropAddress={item?.drop_address || ""}
+          pickupAddress={location?.address || ""}
         />
       </View>
     </View>

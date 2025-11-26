@@ -17,9 +17,10 @@ import { VEHICLE_PASSENGER_LIMITS, VehicleType } from "@/service/rideService";
 interface BookingOptionsModalProps {
   visible: boolean;
   onClose: () => void;
-  onConfirm: (passengerCount: number, landmark: string) => void;
+  onConfirm: (passengerCount: number, dropLandmark: string, pickupLandmark: string) => void;
   vehicleType: VehicleType;
   dropAddress: string;
+  pickupAddress: string;
 }
 
 const BookingOptionsModal: React.FC<BookingOptionsModalProps> = ({
@@ -28,10 +29,12 @@ const BookingOptionsModal: React.FC<BookingOptionsModalProps> = ({
   onConfirm,
   vehicleType,
   dropAddress,
+  pickupAddress,
 }) => {
   const maxPassengers = VEHICLE_PASSENGER_LIMITS[vehicleType] || 1;
   const [passengerCount, setPassengerCount] = useState(1);
-  const [landmark, setLandmark] = useState("");
+  const [dropLandmark, setDropLandmark] = useState("");
+  const [pickupLandmark, setPickupLandmark] = useState("");
 
   // Reset values when modal opens or vehicle type changes
   useEffect(() => {
@@ -56,7 +59,7 @@ const BookingOptionsModal: React.FC<BookingOptionsModalProps> = ({
   };
 
   const handleConfirm = () => {
-    onConfirm(passengerCount, landmark.trim());
+    onConfirm(passengerCount, dropLandmark.trim(), pickupLandmark.trim());
   };
 
   const getVehicleIcon = () => {
@@ -199,7 +202,72 @@ const BookingOptionsModal: React.FC<BookingOptionsModalProps> = ({
               </View>
             </View>
 
-            {/* Landmark Section */}
+            {/* Pickup Landmark Section */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="location" size={RFValue(18)} color="#4CAF50" />
+                <CustomText fontFamily="Medium" fontSize={14} style={styles.sectionTitle}>
+                  Pick-up Landmark
+                </CustomText>
+                <View style={styles.optionalBadge}>
+                  <CustomText fontSize={9} style={styles.optionalText}>
+                    Optional
+                  </CustomText>
+                </View>
+              </View>
+              <CustomText fontSize={11} style={styles.sectionSubtitle}>
+                Help the driver find your pickup location
+              </CustomText>
+
+              {/* Pickup address preview */}
+              <View style={[styles.addressPreview, { borderLeftWidth: 3, borderLeftColor: '#4CAF50' }]}>
+                <Ionicons name="navigate" size={RFValue(14)} color="#4CAF50" />
+                <CustomText fontSize={10} style={styles.addressText} numberOfLines={2}>
+                  {pickupAddress}
+                </CustomText>
+              </View>
+
+              <TextInput
+                style={[styles.landmarkInput, { borderColor: '#4CAF50', borderWidth: 1 }]}
+                placeholder="e.g., Near the red gate, beside 7-Eleven, waiting at the corner..."
+                placeholderTextColor="#999"
+                value={pickupLandmark}
+                onChangeText={setPickupLandmark}
+                multiline
+                numberOfLines={3}
+                maxLength={200}
+                textAlignVertical="top"
+              />
+              <View style={styles.charCountContainer}>
+                <CustomText fontSize={10} style={styles.charCount}>
+                  {pickupLandmark.length}/200 characters
+                </CustomText>
+              </View>
+
+              {/* Pickup Landmark suggestions */}
+              <View style={styles.suggestionsContainer}>
+                <CustomText fontSize={10} style={styles.suggestionsTitle}>
+                  Quick suggestions:
+                </CustomText>
+                <View style={styles.suggestionTags}>
+                  {["Near the gate", "Beside store", "Waiting at corner", "In front of building"].map(
+                    (suggestion, index) => (
+                      <TouchableOpacity
+                        key={index}
+                        style={[styles.suggestionTag, { borderColor: '#4CAF50' }]}
+                        onPress={() => setPickupLandmark(suggestion)}
+                      >
+                        <CustomText fontSize={10} style={[styles.suggestionText, { color: '#4CAF50' }]}>
+                          {suggestion}
+                        </CustomText>
+                      </TouchableOpacity>
+                    )
+                  )}
+                </View>
+              </View>
+            </View>
+
+            {/* Drop-off Landmark Section */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Ionicons name="location" size={RFValue(18)} color="#FF6B6B" />
@@ -213,23 +281,23 @@ const BookingOptionsModal: React.FC<BookingOptionsModalProps> = ({
                 </View>
               </View>
               <CustomText fontSize={11} style={styles.sectionSubtitle}>
-                Help the driver find you at your destination
+                Help the driver find your destination
               </CustomText>
 
               {/* Drop address preview */}
-              <View style={styles.addressPreview}>
-                <Ionicons name="navigate" size={RFValue(14)} color="#666" />
+              <View style={[styles.addressPreview, { borderLeftWidth: 3, borderLeftColor: '#FF6B6B' }]}>
+                <Ionicons name="navigate" size={RFValue(14)} color="#FF6B6B" />
                 <CustomText fontSize={10} style={styles.addressText} numberOfLines={2}>
                   {dropAddress}
                 </CustomText>
               </View>
 
               <TextInput
-                style={styles.landmarkInput}
+                style={[styles.landmarkInput, { borderColor: '#FF6B6B', borderWidth: 1 }]}
                 placeholder="e.g., Near the red gate, beside 7-Eleven, in front of the church..."
                 placeholderTextColor="#999"
-                value={landmark}
-                onChangeText={setLandmark}
+                value={dropLandmark}
+                onChangeText={setDropLandmark}
                 multiline
                 numberOfLines={3}
                 maxLength={200}
@@ -237,11 +305,11 @@ const BookingOptionsModal: React.FC<BookingOptionsModalProps> = ({
               />
               <View style={styles.charCountContainer}>
                 <CustomText fontSize={10} style={styles.charCount}>
-                  {landmark.length}/200 characters
+                  {dropLandmark.length}/200 characters
                 </CustomText>
               </View>
 
-              {/* Landmark suggestions */}
+              {/* Drop-off Landmark suggestions */}
               <View style={styles.suggestionsContainer}>
                 <CustomText fontSize={10} style={styles.suggestionsTitle}>
                   Quick suggestions:
@@ -251,10 +319,10 @@ const BookingOptionsModal: React.FC<BookingOptionsModalProps> = ({
                     (suggestion, index) => (
                       <TouchableOpacity
                         key={index}
-                        style={styles.suggestionTag}
-                        onPress={() => setLandmark(suggestion)}
+                        style={[styles.suggestionTag, { borderColor: '#FF6B6B' }]}
+                        onPress={() => setDropLandmark(suggestion)}
                       >
-                        <CustomText fontSize={10} style={styles.suggestionText}>
+                        <CustomText fontSize={10} style={[styles.suggestionText, { color: '#FF6B6B' }]}>
                           {suggestion}
                         </CustomText>
                       </TouchableOpacity>

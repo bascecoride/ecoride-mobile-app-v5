@@ -9,6 +9,9 @@ import React, {
 import { io, Socket } from "socket.io-client";
 import { SOCKET_URL } from "./config";
 import { refresh_tokens } from "./apiInterceptors";
+import { Alert } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
 
 interface WSService {
   initializeSocket: () => void;
@@ -64,6 +67,69 @@ export const WSProvider: React.FC<{ children: React.ReactNode }> = ({
 
       socket.current.on("connect", () => {
         console.log(`✅ Socket connected successfully with ID: ${socket.current?.id}`);
+      });
+
+      // CRITICAL: Listen for account disapproval events directly in WSProvider
+      // This ensures the listener persists across socket reconnections
+      socket.current.on("accountDisapproved", async (data: { reason: string; timestamp: string }) => {
+        console.log('🚨🚨🚨 ACCOUNT DISAPPROVED EVENT RECEIVED 🚨🚨🚨');
+        console.log('🚨 Data:', JSON.stringify(data));
+        console.log('🚨 Reason:', data?.reason);
+        console.log('🚨 Timestamp:', data?.timestamp);
+        
+        // Show alert immediately
+        const reason = data?.reason || 'Your account has been disapproved by an administrator.';
+        
+        Alert.alert(
+          '⚠️ Account Disapproved',
+          reason + '\n\nYou will be logged out.',
+          [
+            {
+              text: 'OK',
+              onPress: async () => {
+                console.log('🔓 User acknowledged disapproval, logging out...');
+                try {
+                  // Get user role before clearing storage
+                  const userRole = await AsyncStorage.getItem('userRole');
+                  
+                  // Disconnect socket
+                  if (socket.current) {
+                    socket.current.disconnect();
+                    console.log('🔌 Socket disconnected');
+                  }
+                  
+                  // Clear all stored data
+                  await AsyncStorage.multiRemove([
+                    'access_token',
+                    'user',
+                    'userRole',
+                    'userId',
+                  ]);
+                  
+                  // Also clear from tokenStorage (MMKV)
+                  tokenStorage.delete('access_token');
+                  
+                  console.log('🗑️ User data cleared from storage');
+                  
+                  // Navigate to appropriate auth screen
+                  if (userRole === 'rider') {
+                    console.log('📍 Navigating to rider auth...');
+                    router.replace('/rider/auth');
+                  } else {
+                    console.log('📍 Navigating to customer auth...');
+                    router.replace('/customer/auth');
+                  }
+                  
+                  console.log('✅ Logout complete');
+                } catch (error) {
+                  console.error('❌ Error during logout:', error);
+                  router.replace('/customer/auth');
+                }
+              },
+            },
+          ],
+          { cancelable: false }
+        );
       });
       
       socket.current.on("disconnect", (reason) => {
