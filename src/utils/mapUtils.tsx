@@ -118,6 +118,13 @@ export const getPlacesSuggestions = async (query: string) => {
 };
 
 export const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    // Safety check: ensure all coordinates are valid numbers
+    if (lat1 == null || lon1 == null || lat2 == null || lon2 == null ||
+        isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2)) {
+        console.log('⚠️ calculateDistance: Invalid coordinates', { lat1, lon1, lat2, lon2 });
+        return 0;
+    }
+    
     const R = 6371;
     const dLat = (lat2 - lat1) * (Math.PI / 180);
     const dLon = (lon2 - lon1) * (Math.PI / 180);
@@ -213,8 +220,23 @@ const calculateControlPoint = (p1: any, p2: any) => {
 };
 
 export const getPoints = (places: any) => {
-    const p1 = [places[0].latitude, places[0].longitude];
-    const p2 = [places[1].latitude, places[1].longitude];
+    // Safety check: ensure places array exists and has valid coordinates
+    if (!places || !Array.isArray(places) || places.length < 2) {
+        console.log('⚠️ getPoints: Invalid places array');
+        return [];
+    }
+    
+    const place0 = places[0];
+    const place1 = places[1];
+    
+    // Check if both places have valid latitude and longitude
+    if (!place0?.latitude || !place0?.longitude || !place1?.latitude || !place1?.longitude) {
+        console.log('⚠️ getPoints: Missing coordinates in places', { place0, place1 });
+        return [];
+    }
+    
+    const p1 = [place0.latitude, place0.longitude];
+    const p2 = [place1.latitude, place1.longitude];
     const controlPoint = calculateControlPoint(p1, p2);
 
     return quadraticBezierCurve(p1, p2, controlPoint, 100);

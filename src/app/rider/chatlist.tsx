@@ -9,7 +9,7 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import CustomText from "@/components/shared/CustomText";
 import { getMyChats, getOnlineUsers, getOrCreateChat, formatChatTime } from "@/service/chatService";
@@ -17,7 +17,6 @@ import { useWS } from "@/service/WSProvider";
 import { Colors } from "@/utils/Constants";
 import { useRiderStore } from "@/store/riderStore";
 import { getUserProfile } from "@/service/authService";
-import { useIsFocused } from "@react-navigation/native";
 
 interface Chat {
   _id: string;
@@ -66,7 +65,6 @@ export default function RiderChatList() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [totalUnreadCount, setTotalUnreadCount] = useState(0);
   const { on, off, emit } = useWS();
-  const isFocused = useIsFocused();
   
   // Get current user from RIDER store - THIS IS THE KEY TO FILTERING
   const { user: currentUser, setUser } = useRiderStore();
@@ -177,9 +175,10 @@ export default function RiderChatList() {
     }
   };
 
-  // Fetch chats when screen is focused
-  useEffect(() => {
-    if (isFocused) {
+  // Fetch chats when screen is focused using Expo Router's useFocusEffect
+  useFocusEffect(
+    useCallback(() => {
+      console.log("🔍 RIDER CHATLIST - Screen focused, fetching chats...");
       fetchChats();
       
       // Refresh unread count for home screen badge
@@ -189,8 +188,8 @@ export default function RiderChatList() {
       if (activeTab === "online") {
         fetchOnlineUsers();
       }
-    }
-  }, [isFocused, activeTab]);
+    }, [activeTab])
+  );
 
   // ALWAYS listen for new messages - separate from focus logic
   useEffect(() => {

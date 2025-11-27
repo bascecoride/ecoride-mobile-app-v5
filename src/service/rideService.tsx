@@ -83,8 +83,9 @@ export const getMyRides = async (isCustomer: boolean = true) => {
       console.log('✅ No active rides found');
     }
   } catch (error: any) {
-    Alert.alert("Oh! Dang there was an error");
     console.log("Error:GET MY Ride ", error);
+    const errorMessage = error.response?.data?.message || "Failed to fetch rides. Please try again.";
+    Alert.alert("Error", errorMessage);
   }
 };
 
@@ -107,8 +108,30 @@ export const acceptRideOffer = async (rideId: string) => {
       params: { id: rideId },
     });
   } catch (error: any) {
-    Alert.alert("Oh! Dang there was an error");
-    console.log(error);
+    console.log("Error accepting ride:", error);
+    
+    // Extract the specific error message from server response
+    if (error.response?.data?.message) {
+      const serverMessage = error.response.data.message;
+      
+      // Check if it's a distance-related error
+      if (serverMessage.includes("too far") || serverMessage.includes("distance")) {
+        Alert.alert(
+          "Unable to Accept",
+          "The pickup location is outside your service radius. Please move closer to accept this ride."
+        );
+      } else if (serverMessage.includes("vehicle type") || serverMessage.includes("Vehicle type")) {
+        Alert.alert("Vehicle Mismatch", serverMessage);
+      } else if (serverMessage.includes("on duty")) {
+        Alert.alert("Not On Duty", serverMessage);
+      } else if (serverMessage.includes("no longer available")) {
+        Alert.alert("Ride Unavailable", "This ride has already been accepted by another rider.");
+      } else {
+        Alert.alert("Unable to Accept", serverMessage);
+      }
+    } else {
+      Alert.alert("Error", "Unable to accept ride. Please try again.");
+    }
   }
 };
 
@@ -117,8 +140,9 @@ export const updateRideStatus = async (rideId: string, status: string) => {
     const res = await api.patch(`/ride/update/${rideId}`, { status });
     return true;
   } catch (error: any) {
-    Alert.alert("Oh! Dang there was an error");
-    console.log(error);
+    console.log("Error updating ride status:", error);
+    const errorMessage = error.response?.data?.message || "Failed to update ride status. Please try again.";
+    Alert.alert("Error", errorMessage);
     return false;
   }
 };

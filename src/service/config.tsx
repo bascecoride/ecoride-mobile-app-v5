@@ -38,8 +38,8 @@ export const SOCKET_URL = 'wss://ecoride-server-deploy104.onrender.com';
 //export const SOCKET_URL = 'ws://192.168.137.217:3000';
 
 //DITO WIFI
-//export const BASE_URL = 'http://192.168.86.149:3000';
-//export const SOCKET_URL = 'ws://192.168.86.149:3000';
+//export const BASE_URL = 'http://192.168.242.149:3000';
+//export const SOCKET_URL = 'ws://192.168.242.149:3000';
 
 // DOGH IT WIFI
 //export const BASE_URL = 'http://192.168.250.149:3000';

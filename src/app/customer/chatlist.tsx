@@ -9,14 +9,13 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import CustomText from "@/components/shared/CustomText";
 import { getMyChats, getOnlineUsers, getOrCreateChat, formatChatTime } from "@/service/chatService";
 import { useWS } from "@/service/WSProvider";
 import { Colors } from "@/utils/Constants";
 import { useUserStore } from "@/store/userStore";
-import { useIsFocused } from "@react-navigation/native";
 
 interface Chat {
   _id: string;
@@ -66,7 +65,6 @@ export default function CustomerChatList() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [totalUnreadCount, setTotalUnreadCount] = useState(0);
   const { on, off, emit } = useWS();
-  const isFocused = useIsFocused();
   
   // Get current user from store - THIS IS THE KEY TO FILTERING
   const { user: currentUser } = useUserStore();
@@ -162,9 +160,10 @@ export default function CustomerChatList() {
     }
   };
 
-  // Fetch chats when screen is focused
-  useEffect(() => {
-    if (isFocused) {
+  // Fetch chats when screen is focused using Expo Router's useFocusEffect
+  useFocusEffect(
+    useCallback(() => {
+      console.log("🔍 CUSTOMER CHATLIST - Screen focused, fetching chats...");
       fetchChats();
       
       // Refresh unread count for home screen badge
@@ -174,8 +173,8 @@ export default function CustomerChatList() {
       if (activeTab === "online") {
         fetchOnlineUsers();
       }
-    }
-  }, [isFocused, activeTab]);
+    }, [activeTab])
+  );
 
   // ALWAYS listen for new messages - separate from focus logic
   useEffect(() => {

@@ -343,7 +343,7 @@ const LiveTrackingSheet: FC<{ item: RideItem }> = ({ item }) => {
             </View>
 
             <CustomText fontFamily="SemiBold" fontSize={14}>
-              ₱ {item.fare?.toFixed(2)}
+              ₱ {item?.fare != null ? item.fare.toFixed(2) : "0.00"}
             </CustomText>
           </View>
 

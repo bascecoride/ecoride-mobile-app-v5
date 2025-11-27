@@ -94,8 +94,8 @@ const LiveTrackingMap: FC<{
       >
         {rider?.latitude && rider?.longitude && pickup?.latitude && pickup?.longitude && drop?.latitude && drop?.longitude && (
           <MapViewDirections
-            origin={rider}
-            destination={status === "START" ? pickup : drop}
+            origin={{ latitude: rider.latitude, longitude: rider.longitude }}
+            destination={status === "START" ? { latitude: pickup.latitude, longitude: pickup.longitude } : { latitude: drop.latitude, longitude: drop.longitude }}
             onReady={fitToMarkers}
             apikey={apikey}
             strokeColor={Colors.iosColor}
@@ -106,7 +106,7 @@ const LiveTrackingMap: FC<{
           />
         )}
 
-        {drop?.latitude && (
+        {drop?.latitude && drop?.longitude && (
           <Marker
             coordinate={{ latitude: drop.latitude, longitude: drop.longitude }}
             anchor={{ x: 0.5, y: 1 }}
@@ -119,7 +119,7 @@ const LiveTrackingMap: FC<{
           </Marker>
         )}
 
-        {pickup?.latitude && (
+        {pickup?.latitude && pickup?.longitude && (
           <Marker
             coordinate={{
               latitude: pickup.latitude,
@@ -135,7 +135,7 @@ const LiveTrackingMap: FC<{
           </Marker>
         )}
 
-        {rider?.latitude && (
+        {rider?.latitude && rider?.longitude && (
           <Marker
             coordinate={{
               latitude: rider.latitude,

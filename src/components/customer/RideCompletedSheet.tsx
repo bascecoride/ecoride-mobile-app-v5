@@ -238,7 +238,7 @@ const RideCompletedSheet: FC<RideCompletedSheetProps> = ({ item, onNavigateHome 
             </View>
 
             <CustomText fontFamily="Bold" fontSize={18} style={{ color: '#4CAF50' }}>
-              ₱ {item.fare?.toFixed(2)}
+              ₱ {item?.fare != null ? item.fare.toFixed(2) : "0.00"}
             </CustomText>
           </View>
 

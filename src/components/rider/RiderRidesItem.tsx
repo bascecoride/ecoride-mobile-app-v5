@@ -22,9 +22,10 @@ interface RideItem {
   passengerCount?: number;
 }
 
-const RiderRidesItem: FC<{ item: RideItem; removeIt: () => void }> = ({
+const RiderRidesItem: FC<{ item: RideItem; removeIt: () => void; maxDistanceMeters?: number }> = ({
   item,
   removeIt,
+  maxDistanceMeters = 50000, // Default 50km if not provided
 }) => {
   const { location, user } = useRiderStore();
   
@@ -32,12 +33,48 @@ const RiderRidesItem: FC<{ item: RideItem; removeIt: () => void }> = ({
   const riderVehicleType = user?.vehicleType;
   const isVehicleMatch = !riderVehicleType || item.vehicle === riderVehicleType;
   
+  // Calculate distance from rider to pickup location in meters
+  const distanceToPickupKm = (location?.latitude && location?.longitude && item?.pickup?.latitude && item?.pickup?.longitude)
+    ? calculateDistance(
+        item.pickup.latitude,
+        item.pickup.longitude,
+        location.latitude,
+        location.longitude
+      )
+    : 0;
+  const distanceToPickupMeters = distanceToPickupKm * 1000;
+  
+  // Check if ride is within the max distance radius
+  const isTooFar = distanceToPickupMeters > maxDistanceMeters;
+  const maxDistanceKm = (maxDistanceMeters / 1000).toFixed(1);
+  
+  // Determine if ride can be accepted
+  const canAccept = isVehicleMatch && !isTooFar;
+  
+  // Determine the reason for being disabled
+  const getDisabledReason = () => {
+    if (!isVehicleMatch) return "vehicle";
+    if (isTooFar) return "distance";
+    return null;
+  };
+  const disabledReason = getDisabledReason();
+  
   const acceptRide = async () => {
     // Prevent accepting if vehicle type doesn't match
     if (!isVehicleMatch) {
       Alert.alert(
         "Vehicle Type Mismatch",
         `This ride requires a ${item.vehicle}, but your vehicle type is ${riderVehicleType}. Please update your profile or choose a matching ride.`,
+        [{ text: "OK" }]
+      );
+      return;
+    }
+    
+    // Prevent accepting if too far (shouldn't happen since button is disabled, but just in case)
+    if (isTooFar) {
+      Alert.alert(
+        "Too Far Away",
+        `This pickup location is ${distanceToPickupKm.toFixed(1)}km away. Maximum allowed distance is ${maxDistanceKm}km. Please move closer to accept this ride.`,
         [{ text: "OK" }]
       );
       return;
@@ -59,17 +96,35 @@ const RiderRidesItem: FC<{ item: RideItem; removeIt: () => void }> = ({
       exiting={FadeOutRight.duration(500)}
       style={[
         orderStyles.container,
-        // Add visual styling for mismatched rides
-        !isVehicleMatch && {
-          opacity: 0.5,
+        // Add visual styling for disabled rides
+        !canAccept && {
+          opacity: 0.6,
           backgroundColor: '#f5f5f5',
-          borderColor: '#ff6b6b',
+          borderColor: disabledReason === 'distance' ? '#ff9800' : '#ff6b6b',
           borderWidth: 2,
         }
       ]}
     >
+      {/* Too Far Warning Banner */}
+      {isTooFar && (
+        <View style={{
+          backgroundColor: '#ff9800',
+          padding: 8,
+          marginBottom: 10,
+          borderRadius: 5,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+        }}>
+          <Ionicons name="location-outline" size={20} color="white" />
+          <CustomText fontSize={10} style={{ color: 'white', flex: 1 }}>
+            📍 Too Far: {distanceToPickupKm.toFixed(1)}km away (Max: {maxDistanceKm}km)
+          </CustomText>
+        </View>
+      )}
+      
       {/* Vehicle Type Mismatch Warning Banner */}
-      {!isVehicleMatch && (
+      {!isVehicleMatch && !isTooFar && (
         <View style={{
           backgroundColor: '#ff6b6b',
           padding: 8,
@@ -201,14 +256,14 @@ const RiderRidesItem: FC<{ item: RideItem; removeIt: () => void }> = ({
           </CustomText>
 
           <CustomText fontSize={11} fontFamily="SemiBold">
-            {(location &&
-              calculateDistance(
-                item?.pickup?.latitude,
-                item?.pickup?.longitude,
-                location?.latitude,
-                location?.longitude
-              ).toFixed(2)) ||
-              "--"}{" "}
+            {(location?.latitude && location?.longitude && item?.pickup?.latitude && item?.pickup?.longitude)
+              ? calculateDistance(
+                  item.pickup.latitude,
+                  item.pickup.longitude,
+                  location.latitude,
+                  location.longitude
+                ).toFixed(2)
+              : "--"}{" "}
             Km
           </CustomText>
         </View>
@@ -222,7 +277,7 @@ const RiderRidesItem: FC<{ item: RideItem; removeIt: () => void }> = ({
             Drop
           </CustomText>
           <CustomText fontSize={11} fontFamily="SemiBold">
-            {item?.distance.toFixed(2)} Km
+            {item?.distance?.toFixed(2) || "--"} Km
           </CustomText>
         </View>
 
@@ -253,8 +308,8 @@ const RiderRidesItem: FC<{ item: RideItem; removeIt: () => void }> = ({
           onCountdownEnd={removeIt}
           initialCount={30}
           onPress={acceptRide}
-          title={isVehicleMatch ? "Accept" : "Locked"}
-          disabled={!isVehicleMatch}
+          title={canAccept ? "Accept" : (isTooFar ? "Too Far" : "Locked")}
+          disabled={!canAccept}
         />
       </View>
     </Animated.View>

@@ -64,7 +64,7 @@ const RiderLiveTracking: FC<{
   };
 
   const calculateInitialRegion = () => {
-    if (pickup?.latitude && drop?.latitude) {
+    if (pickup?.latitude && pickup?.longitude && drop?.latitude && drop?.longitude) {
       const latitude = (pickup.latitude + drop.latitude) / 2;
       const longitude = (pickup.longitude + drop.longitude) / 2;
       console.log("🗺️ Calculated region:", { latitude, longitude });
@@ -134,10 +134,10 @@ const RiderLiveTracking: FC<{
         loadingIndicatorColor="#007AFF"
         loadingBackgroundColor="#ffffff"
       >
-        {rider?.latitude && pickup?.latitude && (
+        {rider?.latitude && rider?.longitude && pickup?.latitude && pickup?.longitude && drop?.latitude && drop?.longitude && (
           <MapViewDirections
-            origin={status === "START" ? pickup : rider}
-            destination={status === "START" ? rider : drop}
+            origin={status === "START" ? { latitude: pickup.latitude, longitude: pickup.longitude } : { latitude: rider.latitude, longitude: rider.longitude }}
+            destination={status === "START" ? { latitude: rider.latitude, longitude: rider.longitude } : { latitude: drop.latitude, longitude: drop.longitude }}
             onReady={fitToMarkersWithDelay}
             apikey={apikey}
             strokeColor={Colors.iosColor}
@@ -149,7 +149,7 @@ const RiderLiveTracking: FC<{
           />
         )}
 
-        {drop?.latitude && (
+        {drop?.latitude && drop?.longitude && (
           <Marker
             coordinate={{ latitude: drop.latitude, longitude: drop.longitude }}
             anchor={{ x: 0.5, y: 1 }}
@@ -162,7 +162,7 @@ const RiderLiveTracking: FC<{
           </Marker>
         )}
 
-        {pickup?.latitude && (
+        {pickup?.latitude && pickup?.longitude && (
           <Marker
             coordinate={{
               latitude: pickup.latitude,
@@ -178,7 +178,7 @@ const RiderLiveTracking: FC<{
           </Marker>
         )}
 
-        {rider?.latitude && (
+        {rider?.latitude && rider?.longitude && (
           <Marker
             coordinate={{
               latitude: rider.latitude,
@@ -202,7 +202,7 @@ const RiderLiveTracking: FC<{
           </Marker>
         )}
 
-        {drop && pickup && (
+        {drop?.latitude && drop?.longitude && pickup?.latitude && pickup?.longitude && (
           <Polyline
             coordinates={getPoints([drop, pickup])}
             strokeColor={Colors.text}

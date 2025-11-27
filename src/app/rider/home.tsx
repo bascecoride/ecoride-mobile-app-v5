@@ -20,6 +20,7 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/utils/Constants";
 import { chatNotificationService } from "@/service/chatNotificationService";
+import { getDistanceRadiusInMeters } from "@/service/appSettingsService";
 // Note: disapprovalService is now handled directly in WSProvider for reliability
 
 const RiderHome = () => {
@@ -36,6 +37,7 @@ const RiderHome = () => {
   const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'error'>('connecting');
   const [unreadCount, setUnreadCount] = useState(0);
+  const [maxDistanceMeters, setMaxDistanceMeters] = useState<number>(50000); // Default 50km
   
   // Refs for tracking socket status
   const socketFailedRef = useRef<boolean>(false);
@@ -50,6 +52,21 @@ const RiderHome = () => {
       console.log("No auth token available!");
     }
   }, [token]);
+
+  // Fetch max distance setting from server on mount
+  useEffect(() => {
+    const fetchMaxDistance = async () => {
+      try {
+        const meters = await getDistanceRadiusInMeters();
+        console.log(`📏 Max distance radius fetched: ${meters}m (${meters/1000}km)`);
+        setMaxDistanceMeters(meters);
+      } catch (error) {
+        console.error("❌ Error fetching max distance:", error);
+        // Keep default value
+      }
+    };
+    fetchMaxDistance();
+  }, []);
 
   // Initial load of rides and setup chat notifications
   useEffect(() => {
@@ -500,6 +517,55 @@ const RiderHome = () => {
         removeRide(rideId);
       });
 
+      // Listen for location sync requests from server (handles race condition after cancellation)
+      on("requestLocationSync", async (data: any) => {
+        console.log(`🔄 Server requested location sync: ${data?.message}`);
+        
+        // Re-send current location to server to fix the race condition
+        try {
+          const { status } = await Location.getForegroundPermissionsAsync();
+          if (status === "granted") {
+            const currentLocation = await Location.getCurrentPositionAsync({
+              accuracy: Location.Accuracy.Balanced,
+            });
+            
+            const { latitude, longitude, heading } = currentLocation.coords;
+            console.log(`📍 Re-syncing location: (${latitude}, ${longitude})`);
+            
+            // Update local state
+            setLocation({
+              latitude,
+              longitude,
+              address: "Current Location",
+              heading: heading as number || 0,
+            });
+            
+            // Re-emit goOnDuty to ensure we're properly registered in the server's onDutyRiders Map
+            emit("goOnDuty", {
+              latitude,
+              longitude,
+              heading: heading || 0,
+            });
+            
+            console.log(`✅ Location re-synced successfully - rider should be able to accept rides now`);
+            
+            // Show a brief toast/alert to inform the user
+            Alert.alert(
+              "Location Synced",
+              "Your location has been synced. Please try accepting the ride again.",
+              [{ text: "OK" }]
+            );
+          }
+        } catch (error) {
+          console.error("❌ Error re-syncing location:", error);
+          Alert.alert(
+            "Sync Error",
+            "Could not sync your location. Please toggle your duty status off and on again.",
+            [{ text: "OK" }]
+          );
+        }
+      });
+
       return () => {
         console.log("🧹 Cleaning up ride listeners and intervals");
         clearInterval(socketRefreshInterval);
@@ -518,6 +584,7 @@ const RiderHome = () => {
         off("rideCanceled");
         off("rideCompleted");
         off("rideRemovedForYou");
+        off("requestLocationSync");
       };
     } else {
       // Clear rides when going off duty
@@ -551,7 +618,11 @@ const RiderHome = () => {
   // Render individual ride item
   const renderRides = ({ item }: any) => {
     return (
-      <RiderRidesItem removeIt={() => removeRide(item?._id)} item={item} />
+      <RiderRidesItem 
+        removeIt={() => removeRide(item?._id)} 
+        item={item} 
+        maxDistanceMeters={maxDistanceMeters}
+      />
     );
   };
 

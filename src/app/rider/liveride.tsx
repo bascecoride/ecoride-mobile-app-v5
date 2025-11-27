@@ -291,22 +291,22 @@ const LiveRide = () => {
     <View style={rideStyles.container}>
       <StatusBar style="light" backgroundColor="orange" translucent={false} />
 
-      {rideData && (
+      {rideData && rideData?.drop?.latitude && rideData?.drop?.longitude && rideData?.pickup?.latitude && rideData?.pickup?.longitude && (
         <View style={{ flex: 1 }}>
           <RiderLiveTracking
             status={rideData?.status}
             drop={{
-              latitude: parseFloat(rideData?.drop.latitude),
-              longitude: parseFloat(rideData?.drop.longitude),
+              latitude: parseFloat(String(rideData.drop.latitude)) || 0,
+              longitude: parseFloat(String(rideData.drop.longitude)) || 0,
             }}
             pickup={{
-              latitude: parseFloat(rideData?.pickup.latitude),
-              longitude: parseFloat(rideData?.pickup.longitude),
+              latitude: parseFloat(String(rideData.pickup.latitude)) || 0,
+              longitude: parseFloat(String(rideData.pickup.longitude)) || 0,
             }}
             rider={{
-              latitude: currentLocation?.latitude || location?.latitude,
-              longitude: currentLocation?.longitude || location?.longitude,
-              heading: currentLocation?.heading || location?.heading,
+              latitude: currentLocation?.latitude || location?.latitude || 0,
+              longitude: currentLocation?.longitude || location?.longitude || 0,
+              heading: currentLocation?.heading || location?.heading || 0,
             }}
             vehicleType={rideData?.vehicle}
           />
@@ -655,6 +655,22 @@ const LiveRide = () => {
               </TouchableOpacity>
             </View>
           )}
+        </View>
+      )}
+
+      {/* Loading state when rideData exists but coordinates are missing */}
+      {rideData && (!rideData?.drop?.latitude || !rideData?.drop?.longitude || !rideData?.pickup?.latitude || !rideData?.pickup?.longitude) && (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5' }}>
+          <ActivityIndicator size="large" color="orange" />
+          <CustomText fontSize={14} style={{ marginTop: 10, color: '#666' }}>Loading ride details...</CustomText>
+        </View>
+      )}
+
+      {/* Loading state when no rideData at all */}
+      {!rideData && (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5' }}>
+          <ActivityIndicator size="large" color="orange" />
+          <CustomText fontSize={14} style={{ marginTop: 10, color: '#666' }}>Fetching ride information...</CustomText>
         </View>
       )}
 
