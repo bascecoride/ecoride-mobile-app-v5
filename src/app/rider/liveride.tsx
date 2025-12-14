@@ -15,6 +15,7 @@ import CustomText from "@/components/shared/CustomText";
 import { TouchableOpacity } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
 import CancelRideModal from "@/components/rider/CancelRideModal";
+import PaymentConfirmationModal from "@/components/rider/PaymentConfirmationModal";
 import { commonStyles } from "@/styles/commonStyles";
 import { router } from "expo-router";
 import { getOrCreateChat } from "@/service/chatService";
@@ -25,6 +26,7 @@ const LiveRide = () => {
   const [cancelLoading, setCancelLoading] = useState(false);
   const [showCompletionCountdown, setShowCompletionCountdown] = useState(false);
   const [completionCountdown, setCompletionCountdown] = useState(4);
+  const [showPaymentConfirmation, setShowPaymentConfirmation] = useState(false);
   const [chatLoading, setChatLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
@@ -695,12 +697,8 @@ const LiveRide = () => {
             setOtpModalVisible(true);
             return;
           }
-          const isSuccess = await updateRideStatus(rideData?._id, "COMPLETED");
-          if (isSuccess) {
-            setShowCompletionCountdown(true);
-          } else {
-            Alert.alert("There was an error");
-          }
+          // Show payment confirmation modal before completing
+          setShowPaymentConfirmation(true);
         }}
         color="#228B22"
       />
@@ -818,6 +816,26 @@ const LiveRide = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Payment Confirmation Modal */}
+      <PaymentConfirmationModal
+        visible={showPaymentConfirmation}
+        onConfirm={async () => {
+          setShowPaymentConfirmation(false);
+          const isSuccess = await updateRideStatus(rideData?._id, "COMPLETED");
+          if (isSuccess) {
+            setShowCompletionCountdown(true);
+          } else {
+            Alert.alert("There was an error completing the ride");
+          }
+        }}
+        fare={rideData?.fare || 0}
+        paymentMethod={rideData?.paymentMethod || "CASH"}
+        isPWDRide={rideData?.isPWDRide || false}
+        originalFare={rideData?.originalFare}
+        discountAmount={rideData?.discountAmount}
+        pwdDiscountPercentage={rideData?.pwdDiscountPercentage}
+      />
     </View>
   );
 };

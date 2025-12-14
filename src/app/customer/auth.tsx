@@ -51,6 +51,8 @@ export default function Auth() {
   const [schoolIdDocument, setSchoolIdDocument] = useState<any>(null);
   const [staffFacultyIdDocument, setStaffFacultyIdDocument] = useState<any>(null);
   const [cor, setCor] = useState<any>(null);
+  const [isPWD, setIsPWD] = useState<boolean | null>(null);
+  const [pwdCardDocument, setPwdCardDocument] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [showRejectionModal, setShowRejectionModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
@@ -212,6 +214,16 @@ export default function Auth() {
         }
       }
 
+      // Add PWD card document if user is PWD
+      if (isPWD && pwdCardDocument) {
+        console.log('Adding PWD card document to upload');
+        formData.append('pwdCardDocument', {
+          uri: pwdCardDocument.uri,
+          type: pwdCardDocument.mimeType || 'image/jpeg',
+          name: pwdCardDocument.name || 'pwd_card.jpg',
+        } as any);
+      }
+
       console.log('Sending document upload request to server...');
       const response = await fetch(`${BASE_URL}/api/auth/upload-documents`, {
         method: 'POST',
@@ -307,7 +319,9 @@ export default function Auth() {
         schoolIdDocument: documentUrls.schoolIdDocument,
         staffFacultyIdDocument: documentUrls.staffFacultyIdDocument,
         cor: documentUrls.cor,
-        agreedToTerms: true
+        agreedToTerms: true,
+        isPWD: isPWD || false,
+        pwdCardDocument: documentUrls.pwdCardDocument || null
       }, updateAccessToken);
     } catch (error: any) {
       console.error("Registration error:", error);
@@ -725,6 +739,88 @@ export default function Auth() {
                 <MaterialIcons name="badge" size={20} color="#666" />
                 <CustomText fontFamily="Regular" style={styles.documentButtonText}>
                   {staffFacultyIdDocument ? staffFacultyIdDocument.name || `${userRole} ID Selected` : `Upload ${userRole} ID`}
+                </CustomText>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* PWD Question */}
+          <View style={styles.inputContainer}>
+            <CustomText fontFamily="Medium" style={{ marginBottom: 8 }}>
+              Are you a Person with Disability (PWD)?
+            </CustomText>
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <TouchableOpacity
+                style={[
+                  styles.pwdOptionButton,
+                  isPWD === true && styles.pwdOptionButtonSelected
+                ]}
+                onPress={() => setIsPWD(true)}
+              >
+                <MaterialIcons 
+                  name={isPWD === true ? "radio-button-checked" : "radio-button-unchecked"} 
+                  size={20} 
+                  color={isPWD === true ? "#4CAF50" : "#666"} 
+                />
+                <CustomText 
+                  fontFamily={isPWD === true ? "SemiBold" : "Regular"} 
+                  style={{ marginLeft: 8, color: isPWD === true ? "#4CAF50" : "#333" }}
+                >
+                  Yes
+                </CustomText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.pwdOptionButton,
+                  isPWD === false && styles.pwdOptionButtonSelected
+                ]}
+                onPress={() => {
+                  setIsPWD(false);
+                  setPwdCardDocument(null);
+                }}
+              >
+                <MaterialIcons 
+                  name={isPWD === false ? "radio-button-checked" : "radio-button-unchecked"} 
+                  size={20} 
+                  color={isPWD === false ? "#4CAF50" : "#666"} 
+                />
+                <CustomText 
+                  fontFamily={isPWD === false ? "SemiBold" : "Regular"} 
+                  style={{ marginLeft: 8, color: isPWD === false ? "#4CAF50" : "#333" }}
+                >
+                  No
+                </CustomText>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* PWD Card Upload - Only shown if user selects "Yes" */}
+          {isPWD === true && (
+            <View style={styles.inputContainer}>
+              <CustomText fontFamily="Medium">PWD Card (for verification) *</CustomText>
+              <CustomText fontFamily="Regular" variant="h8" style={{ color: '#666', marginBottom: 8 }}>
+                Upload your PWD ID card to receive discounts on rides
+              </CustomText>
+              <TouchableOpacity 
+                style={[
+                  styles.documentButton,
+                  pwdCardDocument && { borderColor: '#4CAF50', backgroundColor: '#E8F5E9' }
+                ]}
+                onPress={() => pickDocument(setPwdCardDocument)}
+              >
+                <MaterialIcons 
+                  name="accessible" 
+                  size={20} 
+                  color={pwdCardDocument ? "#4CAF50" : "#666"} 
+                />
+                <CustomText 
+                  fontFamily="Regular" 
+                  style={[
+                    styles.documentButtonText,
+                    pwdCardDocument && { color: '#4CAF50' }
+                  ]}
+                >
+                  {pwdCardDocument ? pwdCardDocument.name || 'PWD Card Selected ✓' : 'Upload PWD Card'}
                 </CustomText>
               </TouchableOpacity>
             </View>
@@ -1513,5 +1609,19 @@ const styles = StyleSheet.create({
   termsText: {
     color: '#666',
     fontSize: 13,
+  },
+  pwdOptionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#dee2e6',
+    borderRadius: 8,
+    backgroundColor: '#fff',
+  },
+  pwdOptionButtonSelected: {
+    borderColor: '#4CAF50',
+    backgroundColor: '#E8F5E9',
   },
 });

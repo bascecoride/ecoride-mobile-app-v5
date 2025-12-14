@@ -206,6 +206,8 @@ export const register = async (
     driverLicense?: string;
     orCr?: string;
     agreedToTerms?: boolean;
+    isPWD?: boolean;
+    pwdCardDocument?: string | null;
   },
   updateAccessToken: () => Promise<void>
 ) => {

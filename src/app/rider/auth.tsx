@@ -55,6 +55,7 @@ export default function Auth() {
   const [cor, setCor] = useState<any>(null);
   const [driverLicense, setDriverLicense] = useState<any>(null);
   const [orCr, setOrCr] = useState<any>(null);
+  // PWD feature removed for riders - only passengers can claim PWD discounts
   const [loading, setLoading] = useState(false);
   const [showRejectionModal, setShowRejectionModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
@@ -165,6 +166,8 @@ export default function Auth() {
           name: orCr.name || 'or_cr.jpg',
         } as any);
       }
+
+      // PWD card document upload removed for riders - only passengers can claim PWD discounts
 
       console.log('Sending document upload request to server...');
       const response = await fetch(`${BASE_URL}/api/auth/upload-documents`, {
@@ -353,6 +356,7 @@ export default function Auth() {
         driverLicense: documentUrls.driverLicense,
         orCr: documentUrls.orCr,
         agreedToTerms: true
+        // PWD fields removed for riders - only passengers can claim PWD discounts
       }, updateAccessToken);
     } catch (error: any) {
       console.error("Registration error:", error);
@@ -854,6 +858,8 @@ export default function Auth() {
               </CustomText>
             </TouchableOpacity>
           </View>
+
+          {/* PWD Question removed for riders - only passengers can claim PWD discounts */}
         </View>
       )}
 
@@ -1654,4 +1660,5 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 13,
   },
+  // PWD styles removed - only passengers can claim PWD discounts
 });
