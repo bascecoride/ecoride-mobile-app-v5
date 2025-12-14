@@ -27,6 +27,8 @@ const LiveRide = () => {
   const [showCompletionCountdown, setShowCompletionCountdown] = useState(false);
   const [completionCountdown, setCompletionCountdown] = useState(4);
   const [showPaymentConfirmation, setShowPaymentConfirmation] = useState(false);
+  const [isWaitingForPayment, setIsWaitingForPayment] = useState(true); // Start with waiting state
+  const [confirmedPaymentMethod, setConfirmedPaymentMethod] = useState<string | null>(null); // Track confirmed payment
   const [chatLoading, setChatLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
@@ -271,6 +273,26 @@ const LiveRide = () => {
 
       on("rideUpdate", (data) => {
         setRideData(data);
+        // Check if payment method was updated
+        if (data?.paymentMethod) {
+          console.log('💳 Payment method received from ride update:', data.paymentMethod);
+          setConfirmedPaymentMethod(data.paymentMethod);
+          setIsWaitingForPayment(false);
+        }
+      });
+
+      // Listen for payment method selection from passenger
+      on("paymentMethodSelected", (data) => {
+        console.log('💳 Payment method selected by passenger:', data);
+        if (data?.rideId === id && data?.paymentMethod) {
+          setConfirmedPaymentMethod(data.paymentMethod);
+          setIsWaitingForPayment(false);
+          // Update ride data with payment method
+          setRideData((prev: any) => ({
+            ...prev,
+            paymentMethod: data.paymentMethod
+          }));
+        }
       });
 
       on("error", (error) => {
@@ -285,6 +307,7 @@ const LiveRide = () => {
       off("rideCanceled");
       off("passengerCancelledRide");
       off("rideUpdate");
+      off("paymentMethodSelected");
       off("error");
     };
   }, [id, emit, on, off]);
@@ -697,8 +720,18 @@ const LiveRide = () => {
             setOtpModalVisible(true);
             return;
           }
-          // Show payment confirmation modal before completing
-          setShowPaymentConfirmation(true);
+          // First update status to COMPLETED, then show payment waiting modal
+          console.log('🏁 Rider swiped to complete ride, updating status...');
+          const isSuccess = await updateRideStatus(rideData?._id, "COMPLETED");
+          if (isSuccess) {
+            console.log('✅ Ride status updated to COMPLETED, showing payment waiting modal...');
+            // Reset payment state for fresh waiting
+            setIsWaitingForPayment(true);
+            setConfirmedPaymentMethod(null);
+            setShowPaymentConfirmation(true);
+          } else {
+            Alert.alert("Error", "Failed to complete ride. Please try again.");
+          }
         }}
         color="#228B22"
       />
@@ -820,17 +853,18 @@ const LiveRide = () => {
       {/* Payment Confirmation Modal */}
       <PaymentConfirmationModal
         visible={showPaymentConfirmation}
+        isWaitingForPayment={isWaitingForPayment}
         onConfirm={async () => {
-          setShowPaymentConfirmation(false);
-          const isSuccess = await updateRideStatus(rideData?._id, "COMPLETED");
-          if (isSuccess) {
-            setShowCompletionCountdown(true);
-          } else {
-            Alert.alert("There was an error completing the ride");
+          // Only allow confirm if payment method is confirmed
+          if (!confirmedPaymentMethod) {
+            console.log('⏳ Still waiting for payment method confirmation...');
+            return;
           }
+          setShowPaymentConfirmation(false);
+          setShowCompletionCountdown(true);
         }}
         fare={rideData?.fare || 0}
-        paymentMethod={rideData?.paymentMethod || "CASH"}
+        paymentMethod={confirmedPaymentMethod}
         isPWDRide={rideData?.isPWDRide || false}
         originalFare={rideData?.originalFare}
         discountAmount={rideData?.discountAmount}

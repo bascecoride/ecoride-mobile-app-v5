@@ -4,6 +4,8 @@ import {
   Modal,
   TouchableOpacity,
   StyleSheet,
+  Image,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CustomText from '@/components/shared/CustomText';
@@ -12,11 +14,12 @@ interface PaymentConfirmationModalProps {
   visible: boolean;
   onConfirm: () => void;
   fare: number;
-  paymentMethod: string;
+  paymentMethod: string | null;
   isPWDRide?: boolean;
   originalFare?: number;
   discountAmount?: number;
   pwdDiscountPercentage?: number;
+  isWaitingForPayment?: boolean; // New prop to show loading state
 }
 
 const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
@@ -28,6 +31,7 @@ const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
   originalFare,
   discountAmount,
   pwdDiscountPercentage,
+  isWaitingForPayment = false,
 }) => {
   const getPaymentMethodDisplay = () => {
     switch (paymentMethod) {
@@ -36,19 +40,90 @@ const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
       case 'GCASH':
         return 'GCash';
       default:
-        return paymentMethod || 'Cash';
+        return 'Pending...';
     }
   };
 
-  const getPaymentIcon = () => {
+  // Render payment icon based on method - using actual image assets
+  const renderPaymentIcon = () => {
+    if (isWaitingForPayment || !paymentMethod) {
+      return <ActivityIndicator size="small" color="#4CAF50" />;
+    }
+    
     switch (paymentMethod) {
-      case 'GCASH':
-        return 'phone-portrait-outline';
       case 'CASH':
+        return (
+          <Image
+            source={require('@/assets/icons/rupee.png')}
+            style={{ width: 28, height: 28 }}
+            resizeMode="contain"
+          />
+        );
+      case 'GCASH':
+        return (
+          <Image
+            source={require('@/assets/images/gcash-logo.png')}
+            style={{ width: 32, height: 32 }}
+            resizeMode="contain"
+          />
+        );
       default:
-        return 'cash-outline';
+        return <Ionicons name="help-circle-outline" size={24} color="#999" />;
     }
   };
+
+  // If waiting for payment, show loading state
+  if (isWaitingForPayment) {
+    return (
+      <Modal
+        visible={visible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {}}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.modalContainer}>
+            {/* Loading Icon */}
+            <View style={styles.iconContainer}>
+              <View style={[styles.successCircle, { backgroundColor: '#FF9800' }]}>
+                <ActivityIndicator size="large" color="white" />
+              </View>
+            </View>
+
+            {/* Title */}
+            <CustomText fontFamily="Bold" fontSize={22} style={styles.title}>
+              Waiting for Payment... ⏳
+            </CustomText>
+
+            {/* Subtitle */}
+            <CustomText fontSize={14} style={styles.subtitle}>
+              The passenger is selecting their payment method
+            </CustomText>
+
+            {/* Fare Display */}
+            <View style={styles.paymentCard}>
+              <View style={styles.amountSection}>
+                <CustomText fontSize={12} style={styles.amountLabel}>
+                  Ride Fare
+                </CustomText>
+                <CustomText fontFamily="Bold" fontSize={32} style={styles.amount}>
+                  ₱{fare.toFixed(2)}
+                </CustomText>
+              </View>
+            </View>
+
+            {/* Loading Message */}
+            <View style={styles.messageContainer}>
+              <ActivityIndicator size="small" color="#FF9800" style={{ marginRight: 10 }} />
+              <CustomText fontSize={12} style={styles.messageText}>
+                Please wait while the passenger confirms their payment method. This screen will update automatically.
+              </CustomText>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  }
 
   return (
     <Modal
@@ -73,7 +148,7 @@ const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
 
           {/* Subtitle */}
           <CustomText fontSize={14} style={styles.subtitle}>
-            The passenger has already paid for this ride
+            The passenger has confirmed payment for this ride
           </CustomText>
 
           {/* Payment Details Card */}
@@ -81,7 +156,7 @@ const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
             {/* Payment Method */}
             <View style={styles.paymentRow}>
               <View style={styles.paymentIconContainer}>
-                <Ionicons name={getPaymentIcon()} size={24} color="#4CAF50" />
+                {renderPaymentIcon()}
               </View>
               <View style={styles.paymentInfo}>
                 <CustomText fontSize={12} style={styles.paymentLabel}>
