@@ -1,4 +1,4 @@
-package com.fankarwanta.rideapp
+package com.ecoridebasc.rideapp
 
 import android.app.Application
 import android.content.res.Configuration

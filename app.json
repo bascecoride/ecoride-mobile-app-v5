@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.fankarwanta.rideapp",
+      "bundleIdentifier": "com.ecoridebasc.rideapp",
       "config": {
         "googleMapsApiKey": "AIzaSyAO0FLe4ZAqH36QIrkbhsb2qpHdS-tZVlc"
       }
@@ -26,7 +26,7 @@
           "apiKey": "AIzaSyAO0FLe4ZAqH36QIrkbhsb2qpHdS-tZVlc"
         }
       },
-      "package": "com.fankarwanta.rideapp",
+      "package": "com.ecoridebasc.rideapp",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/images/ecoride_logo1.png",

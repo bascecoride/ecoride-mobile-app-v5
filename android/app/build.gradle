@@ -86,9 +86,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.fankarwanta.rideapp'
+    namespace 'com.ecoridebasc.rideapp'
     defaultConfig {
-        applicationId 'com.fankarwanta.rideapp'
+        applicationId 'com.ecoridebasc.rideapp'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -147,7 +147,6 @@ android {
 }
 
 dependencies {
-    implementation "com.google.android.gms:play-services-maps:18.1.0"
     implementation "com.google.android.gms:play-services-maps:18.1.0"
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
